@@ -4,6 +4,7 @@ import { TypingAnimation } from "@/components/ui/typing-animation";
 import { ShineBorder } from "@/components/ui/shine-border";
 import { NumberTicker } from "@/components/ui/number-ticker";
 import {GridPattern} from "@/components/ui/grid-pattern";
+import Link from "next/link";
 
 const scoreBars = [
   { label: "ATS", score: 12, max: 20, colorClass: "bg-accent" },
@@ -39,7 +40,7 @@ export function HeroSection() {
             <TypingAnimation
               as="span"
               duration={45}
-              className="text-accent tracking-normal"
+              className="text-cyan-300 tracking-normal"
             >
               without losing your voice.
             </TypingAnimation>
@@ -52,12 +53,16 @@ export function HeroSection() {
 
           {/* CTAs */}
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button
-              aria-disabled="true"
-              className="w-full px-6 py-2.5 hover:bg-accent/90 sm:w-auto cursor-pointer"
+            <Link
+              href="/dashboard"
             >
-              Join waitlist
-            </Button>
+              <Button
+                aria-disabled="true"
+                className="w-full px-6 py-2.5 hover:bg-accent/90 sm:w-auto cursor-pointer"
+              >
+                Join waitlist
+              </Button>
+            </Link>
             <Button
               variant="outline"
               className="w-full border-border bg-bg-surface px-6 py-2.5 text-text-primary hover:bg-bg-hover hover:text-text-primary sm:w-auto cursor-pointer"
