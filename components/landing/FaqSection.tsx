@@ -16,15 +16,15 @@ export function FaqSection() {
     <section className="border-t border-border bg-bg-surface">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
         <div className="max-w-2xl">
-          <h2 className="text-2xl font-medium text-text-primary sm:text-3xl">FAQ</h2>
-          <p className="mt-3 text-text-secondary">Quick answers.</p>
+          <h2 className="text-4xl font-medium text-text-primary">FAQ</h2>
+          <p className="mt-2 text-text-secondary">Quick answers.</p>
         </div>
 
         <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-2">
           {faqs.map((item) => (
             <Card
               key={item.q}
-              className="rounded-card border border-border bg-bg-raised p-6 ring-0 gap-0"
+              className="border-l-2 border-[#4cc9a0] border-t-0 border-r-0 border-b-0 rounded-none bg-bg-raised p-6"
             >
               <p className="text-sm font-medium text-text-primary">{item.q}</p>
               <p className="mt-2 text-sm leading-6 text-text-secondary">{item.a}</p>

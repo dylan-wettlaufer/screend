@@ -11,7 +11,7 @@ export function LandingHeader() {
           <span className="text-base font-medium text-text-primary">Screend</span>
         </div>
 
-        <nav className="hidden items-center gap-6 text-sm text-text-secondary md:flex">
+        <nav className="hidden items-center gap-4 text-sm text-text-secondary md:flex">
           <a href="#features" className="transition-colors hover:text-accent">
             Features
           </a>
