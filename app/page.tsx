@@ -1,6 +1,11 @@
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-bg-base text-text-primary">
+      {/* ── Header ─────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 border-b border-border bg-bg-base/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
           <div className="flex items-center gap-2">
@@ -11,65 +16,66 @@ export default function Home() {
           </div>
 
           <nav className="hidden items-center gap-6 text-sm text-text-secondary md:flex">
-            <a href="#features" className="hover:text-text-primary">
+            <a href="#features" className="transition-colors hover:text-accent">
               Features
             </a>
-            <a href="#how" className="hover:text-text-primary">
+            <a href="#how" className="transition-colors hover:text-accent">
               How it works
             </a>
-            <a href="#pricing" className="hover:text-text-primary">
+            <a href="#pricing" className="transition-colors hover:text-accent">
               Pricing
             </a>
           </nav>
 
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="hidden rounded-element border border-border bg-bg-surface px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 sm:inline-flex"
+            <Button
+              variant="outline"
+              size="sm"
+              className="hidden border-border bg-bg-surface text-text-primary hover:bg-bg-hover hover:text-text-primary sm:inline-flex"
             >
               Sign in
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              size="sm"
               aria-disabled="true"
-              className="inline-flex items-center justify-center rounded-element bg-accent px-4 py-2 text-sm font-medium text-bg-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+              className="hover:bg-accent/90"
             >
               Go to dashboard
-            </button>
+            </Button>
           </div>
         </div>
       </header>
 
       <main>
+        {/* ── Hero ───────────────────────────────────────────── */}
         <section className="relative">
           <div className="mx-auto max-w-6xl px-4 pt-16 pb-12 sm:px-6 sm:pt-20 sm:pb-16">
             <div className="mx-auto max-w-3xl text-center">
-              <p className="inline-flex items-center rounded-pill border border-border bg-bg-surface px-3 py-1 text-xs font-medium text-text-secondary">
+              <p className="inline-flex items-center rounded-pill border border-accent-dim bg-accent-muted px-3 py-1 text-xs font-medium text-accent">
                 Built for tech job seekers • ATS-aware • Line-level control
               </p>
-              <h1 className="mt-6 text-4xl font-medium leading-tight text-text-primary sm:text-5xl">
+              <h1 className="mt-6 text-4xl font-medium leading-tight text-accent sm:text-5xl">
                 Make your resume match the role without losing your voice
               </h1>
               <p className="mt-5 text-lg leading-8 text-text-secondary">
-                Screend scans your resume (and optional job description), scores it across five dimensions, and suggests
-                targeted improvements you can accept one line at a time, then preview a diff and export a clean PDF or
-                DOCX.
+                Screend scans your resume (and optional job description), scores it across five
+                dimensions, and suggests targeted improvements you can accept one line at a time,
+                then preview a diff and export a clean PDF or DOCX.
               </p>
 
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <button
-                  type="button"
+                <Button
                   aria-disabled="true"
-                  className="inline-flex w-full items-center justify-center rounded-element bg-accent px-6 py-3 text-sm font-medium text-bg-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 sm:w-auto"
+                  className="w-full px-6 py-2.5 hover:bg-accent/90 sm:w-auto"
                 >
                   Go to dashboard
-                </button>
-                <button
-                  type="button"
-                  className="inline-flex w-full items-center justify-center rounded-element border border-border bg-bg-surface px-6 py-3 text-sm font-medium text-text-primary hover:bg-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 sm:w-auto"
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full border-border bg-bg-surface px-6 py-2.5 text-text-primary hover:bg-bg-hover hover:text-text-primary sm:w-auto"
                 >
-                  See how it works
-                </button>
+                  <a href="#how">See how it works</a>
+                </Button>
               </div>
 
               <div className="mt-8 grid grid-cols-1 gap-3 text-left sm:grid-cols-3">
@@ -87,51 +93,57 @@ export default function Home() {
                     body: "Review changes side by side, then download PDF or DOCX.",
                   },
                 ].map((item) => (
-                  <div
+                  <Card
                     key={item.title}
-                    className="rounded-card border border-border bg-bg-surface p-4"
+                    className="rounded-card border border-border bg-bg-surface p-4 ring-0 gap-0"
                   >
-                    <p className="text-sm font-medium text-text-primary">{item.title}</p>
+                    <p className="text-sm font-medium text-accent">{item.title}</p>
                     <p className="mt-1 text-sm text-text-secondary">{item.body}</p>
-                  </div>
+                  </Card>
                 ))}
               </div>
 
               <p className="mt-6 text-xs text-text-tertiary">
-                Prototype landing page. Buttons are placeholders; dashboard routing will be added later.
+                Prototype landing page. Buttons are placeholders; dashboard routing will be added
+                later.
               </p>
             </div>
           </div>
         </section>
 
-        <section className="border-y border-border bg-bg-surface">
+        {/* ── Social proof strip ─────────────────────────────── */}
+        <section className="border-y border-accent-dim bg-bg-surface">
           <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
             <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
               <p className="text-sm text-text-secondary">
-                Social proof goes here (testimonials, logos, or usage stats) once you have real data.
+                Social proof goes here (testimonials, logos, or usage stats) once you have real
+                data.
               </p>
               <div className="flex flex-wrap items-center justify-center gap-2">
-                {["ATS-friendly", "Tech keyword focus", "Line-level edits", "Export PDF or DOCX"].map((pill) => (
-                  <span
-                    key={pill}
-                    className="rounded-pill border border-accent-dim bg-accent-muted/40 px-3 py-1 text-xs font-medium text-text-primary font-mono"
-                  >
-                    {pill}
-                  </span>
-                ))}
+                {["ATS-friendly", "Tech keyword focus", "Line-level edits", "Export PDF or DOCX"].map(
+                  (pill) => (
+                    <Badge
+                      key={pill}
+                      className="rounded-pill border-accent-dim bg-accent-muted px-3 py-1 font-mono text-accent"
+                    >
+                      {pill}
+                    </Badge>
+                  )
+                )}
               </div>
             </div>
           </div>
         </section>
 
+        {/* ── Features ───────────────────────────────────────── */}
         <section id="features" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
           <div className="max-w-2xl">
-            <h2 className="text-2xl font-medium text-text-primary sm:text-3xl">
+            <h2 className="text-2xl font-medium text-accent sm:text-3xl">
               Everything you need for tech role resumes
             </h2>
             <p className="mt-3 text-text-secondary">
-              Generic resume tools miss engineering nuance. Screend is tuned for how tech recruiters and ATS systems
-              read projects, impact, and keyword coverage.
+              Generic resume tools miss engineering nuance. Screend is tuned for how tech recruiters
+              and ATS systems read projects, impact, and keyword coverage.
             </p>
           </div>
 
@@ -162,43 +174,45 @@ export default function Home() {
                 body: "Download a clean, single column resume output with accepted changes applied.",
               },
             ].map((feature) => (
-              <div
+              <Card
                 key={feature.title}
-                className="rounded-card border border-border bg-bg-surface p-6"
+                className="rounded-card border border-border bg-bg-surface p-6 ring-0 gap-0"
               >
-                <p className="text-sm font-medium text-text-primary">{feature.title}</p>
+                <p className="text-sm font-medium text-accent">{feature.title}</p>
                 <p className="mt-2 text-sm leading-6 text-text-secondary">{feature.body}</p>
-              </div>
+              </Card>
             ))}
           </div>
 
-          <div className="mt-10 rounded-card border border-border bg-bg-surface p-6">
+          <Card className="mt-10 rounded-card border border-border bg-bg-surface p-6 ring-0 gap-0">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="text-sm font-medium text-text-primary">Role tracks (optional)</p>
                 <p className="mt-1 text-sm text-text-secondary">
-                  Tune feedback for SWE, backend, frontend, full stack, data, devops and platform, ML, mobile, or
-                  general tech.
+                  Tune feedback for SWE, backend, frontend, full stack, data, devops and platform,
+                  ML, mobile, or general tech.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 {["SWE", "Backend", "Frontend", "Devops", "Data", "ML", "Mobile"].map((tag) => (
-                  <span
+                  <Badge
                     key={tag}
-                    className="rounded-pill border border-border bg-bg-raised px-3 py-1 text-xs font-medium text-text-primary font-mono"
+                    variant="outline"
+                    className="rounded-pill border-border font-mono text-text-secondary"
                   >
                     {tag}
-                  </span>
+                  </Badge>
                 ))}
               </div>
             </div>
-          </div>
+          </Card>
         </section>
 
+        {/* ── How it works ───────────────────────────────────── */}
         <section id="how" className="border-t border-border bg-bg-surface">
           <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
             <div className="max-w-2xl">
-              <h2 className="text-2xl font-medium text-text-primary sm:text-3xl">How it works</h2>
+              <h2 className="text-2xl font-medium text-accent sm:text-3xl">How it works</h2>
               <p className="mt-3 text-text-secondary">
                 A straightforward flow designed to keep you in control of every change.
               </p>
@@ -222,9 +236,9 @@ export default function Home() {
                   body: "Generate an updated resume, undo any change, then download PDF or DOCX.",
                 },
               ].map((item) => (
-                <div
+                <Card
                   key={item.step}
-                  className="rounded-card border border-border bg-bg-raised p-6"
+                  className="rounded-card border border-border bg-bg-raised p-6 ring-0 gap-0"
                 >
                   <div className="flex items-center gap-3">
                     <span className="inline-flex h-9 w-9 items-center justify-center rounded-element bg-accent text-sm font-medium text-bg-base">
@@ -233,18 +247,21 @@ export default function Home() {
                     <p className="text-sm font-medium text-text-primary">{item.title}</p>
                   </div>
                   <p className="mt-3 text-sm leading-6 text-text-secondary">{item.body}</p>
-                </div>
+                </Card>
               ))}
             </div>
           </div>
         </section>
 
+        {/* ── Pricing ────────────────────────────────────────── */}
         <section id="pricing" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
           <div className="max-w-2xl">
-            <h2 className="text-2xl font-medium text-text-primary sm:text-3xl">Simple subscription pricing</h2>
+            <h2 className="text-2xl font-medium text-accent sm:text-3xl">
+              Simple subscription pricing
+            </h2>
             <p className="mt-3 text-text-secondary">
-              Version one is subscription only with no free tier. The goal is to deliver consistently high signal
-              feedback for tech roles.
+              Version one is subscription only with no free tier. The goal is to deliver
+              consistently high signal feedback for tech roles.
             </p>
           </div>
 
@@ -261,12 +278,14 @@ export default function Home() {
                 note: "Save around twenty percent (placeholder).",
               },
             ].map((plan) => (
-              <div
+              <Card
                 key={plan.title}
-                className="rounded-card border border-border bg-bg-surface p-6"
+                className="rounded-card border border-border bg-bg-surface p-6 ring-0 gap-0"
               >
                 <p className="text-sm font-medium text-text-primary">{plan.title}</p>
-                <p className="mt-2 text-3xl font-medium tracking-tight text-text-primary">{plan.price}</p>
+                <p className="mt-2 text-3xl font-medium tracking-tight text-text-primary">
+                  {plan.price}
+                </p>
                 <p className="mt-2 text-sm text-text-secondary">{plan.note}</p>
                 <ul className="mt-6 space-y-2 text-sm text-text-secondary">
                   {[
@@ -278,31 +297,29 @@ export default function Home() {
                     "Scan history.",
                   ].map((line) => (
                     <li key={line} className="flex gap-2">
-                      <span className="mt-[2px] inline-flex h-5 w-5 items-center justify-center rounded-pill border border-border bg-bg-raised text-[10px] font-medium text-success font-mono">
+                      <span className="mt-[2px] inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-pill border border-border bg-bg-raised text-[10px] font-medium text-success font-mono">
                         ✓
                       </span>
                       <span>{line}</span>
                     </li>
                   ))}
                 </ul>
-                <div className="mt-8">
-                  <button
-                    type="button"
-                    aria-disabled="true"
-                    className="inline-flex w-full items-center justify-center rounded-element bg-accent px-6 py-3 text-sm font-medium text-bg-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
-                  >
-                    Subscribe (placeholder)
-                  </button>
-                </div>
-              </div>
+                <Button
+                  aria-disabled="true"
+                  className="mt-8 w-full hover:bg-accent/90"
+                >
+                  Subscribe (placeholder)
+                </Button>
+              </Card>
             ))}
           </div>
         </section>
 
+        {/* ── FAQ ────────────────────────────────────────────── */}
         <section className="border-t border-border bg-bg-surface">
           <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
             <div className="max-w-2xl">
-              <h2 className="text-2xl font-medium text-text-primary sm:text-3xl">FAQ</h2>
+              <h2 className="text-2xl font-medium text-accent sm:text-3xl">FAQ</h2>
               <p className="mt-3 text-text-secondary">
                 A few common questions you will likely get from early users.
               </p>
@@ -324,22 +341,23 @@ export default function Home() {
                 },
                 {
                   q: "Can I tailor feedback for specific tech roles?",
-                  a: "Yes. You can optionally select a role track such as SWE, backend, devops, or ML to bias feedback toward that track’s norms.",
+                  a: "Yes. You can optionally select a role track such as SWE, backend, devops, or ML to bias feedback toward that track's norms.",
                 },
               ].map((item) => (
-                <div
+                <Card
                   key={item.q}
-                  className="rounded-card border border-border bg-bg-raised p-6"
+                  className="rounded-card border border-border bg-bg-raised p-6 ring-0 gap-0"
                 >
                   <p className="text-sm font-medium text-text-primary">{item.q}</p>
                   <p className="mt-2 text-sm leading-6 text-text-secondary">{item.a}</p>
-                </div>
+                </Card>
               ))}
             </div>
           </div>
         </section>
       </main>
 
+      {/* ── Footer ─────────────────────────────────────────── */}
       <footer className="border-t border-border bg-bg-base">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
@@ -354,16 +372,16 @@ export default function Home() {
             </div>
 
             <div className="flex flex-wrap gap-3 text-sm text-text-secondary">
-              <a className="hover:text-text-primary" href="#features">
+              <a className="transition-colors hover:text-accent" href="#features">
                 Features
               </a>
-              <a className="hover:text-text-primary" href="#how">
+              <a className="transition-colors hover:text-accent" href="#how">
                 How it works
               </a>
-              <a className="hover:text-text-primary" href="#pricing">
+              <a className="transition-colors hover:text-accent" href="#pricing">
                 Pricing
               </a>
-              <a className="hover:text-text-primary" href="#">
+              <a className="transition-colors hover:text-accent" href="#">
                 Privacy
               </a>
             </div>
