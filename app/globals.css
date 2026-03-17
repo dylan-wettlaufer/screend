@@ -97,6 +97,15 @@
   --radius-card: 0.75rem;
   --radius-element: var(--radius);
   --radius-pill: 9999px;
+  --animate-blink-cursor: blink-cursor 1.2s step-end infinite;
+  @keyframes blink-cursor {
+  0%, 49% {
+    opacity: 1;
+    }
+  50%, 100% {
+    opacity: 0;
+    }
+  }
 }
 
 body {
