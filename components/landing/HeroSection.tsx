@@ -6,10 +6,10 @@ import { NumberTicker } from "@/components/ui/number-ticker";
 import {GridPattern} from "@/components/ui/grid-pattern";
 
 const scoreBars = [
-  { label: "ATS", score: 12, max: 20, colorClass: "bg-warning" },
-  { label: "Content", score: 15, max: 20, colorClass: "bg-accent" },
-  { label: "Writing", score: 12, max: 20, colorClass: "bg-warning" },
-  { label: "Job Match", score: 8, max: 20, colorClass: "bg-danger" },
+  { label: "ATS", score: 12, max: 20, colorClass: "bg-accent" },
+  { label: "Content", score: 16, max: 20, colorClass: "bg-accent" },
+  { label: "Writing", score: 12, max: 20, colorClass: "bg-accent" },
+  { label: "Job Match", score: 8, max: 20, colorClass: "bg-accent" },
   { label: "Ready", score: 20, max: 20, colorClass: "bg-accent" },
 ];
 
@@ -21,7 +21,7 @@ export function HeroSection() {
       <div className="mx-auto max-w-6xl px-4 pt-16 pb-12 sm:px-6 sm:pt-20 sm:pb-16">
         <div className="mx-auto max-w-3xl text-center">
           
-          {/* Announcement badge */}
+          {/* Announcement badge 
           <div className="inline-flex items-center gap-2 rounded-element border border-border bg-bg-surface px-3 py-1.5 text-xs text-text-secondary">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-pill bg-accent opacity-60" />
@@ -30,10 +30,10 @@ export function HeroSection() {
             <span className="font-medium text-accent">New</span>
             <span className="text-border-strong">|</span>
             <span>AI resume scans for tech roles</span>
-          </div>
+          </div> */}
 
           {/* Headline */}
-          <h1 className="mt-6 text-4xl font-medium leading-tight text-text-primary sm:text-5xl">
+          <h1 className="mt-4 text-4xl font-medium leading-tight text-text-primary sm:text-5xl">
             Make your resume match the role
             <br />
             <TypingAnimation
@@ -68,7 +68,7 @@ export function HeroSection() {
 
           {/* UI Preview Card */}
           <div className="relative mt-10 overflow-hidden rounded-card border border-border bg-bg-surface p-5 text-left">
-            <ShineBorder shineColor={["#4cc9a0", "#a7edce"]} borderWidth={1} duration={20} />
+            <ShineBorder shineColor={["#3b82f6","#53EAFD", "#7DD3FC"]} borderWidth={1} duration={20} />
             <div className="mb-3 flex items-center gap-2">
               <span className="text-[10px] text-text-tertiary uppercase tracking-widest">sample scan</span>
               <span className="h-px flex-1 bg-border" />
@@ -77,35 +77,14 @@ export function HeroSection() {
               {/* Score ring */}
               <div className="flex shrink-0 flex-col items-center gap-1.5">
                 <div className="relative h-20 w-20">
-                  <svg className="h-20 w-20 -rotate-90" viewBox="0 0 36 36">
-                    <circle
-                      cx="18"
-                      cy="18"
-                      r="15"
-                      fill="none"
-                      stroke="#2a3230"
-                      strokeWidth="2.5"
-                    />
-                    <circle
-                      cx="18"
-                      cy="18"
-                      r="15"
-                      fill="none"
-                      stroke="#f5cb4c"
-                      strokeWidth="2.5"
-                      strokeDasharray="63 31"
-                      strokeLinecap="round"
-                    />
-                  </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <NumberTicker
-                      value={67}
-                      className="text-xl font-medium  text-text-primary tracking-normal"
+                      value={68}
+                      className="text-4xl font-medium  text-text-primary tracking-normal"
                     />
-                    <span className="text-[9px] text-text-tertiary">/100</span>
+                    <span className="text-[12px] text-text-tertiary">/100</span>
                   </div>
                 </div>
-                <p className="text-[10px] text-text-tertiary">overall</p>
               </div>
 
               {/* Score bars */}

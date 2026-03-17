@@ -94,3 +94,12 @@ success:        #4cc9a0   good scores, matched keywords (same as accent)
 - Keep API routes thin — business logic lives in `lib/` not in `route.ts` files
 - Always use `next/image` for images, never a bare `<img>` tag
 - When in doubt about a product decision refer to `docs/PRD.md`
+
+Score bars should use a single blue (#3b82f6) at varying 
+opacity based on score: 100% opacity for high scores, 
+down to 35% opacity for low scores. No yellow, pink, 
+or multi-color bars anywhere.
+accent is now #3b82f6 (electric blue), surfaces are 
+zinc-based (#0a0a0b base, #111113 surface, #18181b raised).
+Remove all green accent references. Primary button text 
+is now #ffffff not #0a1f18.
