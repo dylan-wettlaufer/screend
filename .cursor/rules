@@ -1,0 +1,96 @@
+# Screend — Cursor Rules
+
+## Project context
+We are building Screend (screend.dev) — an AI-powered resume analyzer and optimizer targeting tech job seekers (software engineers, backend, frontend, devops, ML engineers). The full PRD is at `docs/PRD.md` — reference it whenever making product or architecture decisions.
+
+## Tech stack
+- Framework: Next.js 14 App Router (not Pages Router — never use pages/)
+- Language: TypeScript — strict mode, always type everything, never use `any`
+- Styling: Tailwind CSS with custom design tokens (see below)
+- Components: shadcn/ui as base components + Magic UI for animations
+- Auth: Clerk — all auth logic goes through Clerk, never roll custom auth
+- Database: Supabase (PostgreSQL) — service role key server-side only, never expose to client
+- AI: Anthropic SDK — model is always `claude-sonnet-4-20250514`, temperature 0 for structured outputs
+- Payments: Stripe — subscriptions only, webhooks sync to Clerk metadata
+- Deployment: Vercel
+
+## Folder structure
+```
+app/                    ← Next.js App Router pages and API routes
+  (marketing)/          ← public marketing pages (landing, pricing)
+  (app)/                ← protected app pages (dashboard, scan, history)
+  api/                  ← API route handlers
+    analyze/route.ts
+    rewrite/route.ts
+    webhooks/
+      stripe/route.ts
+      clerk/route.ts
+    billing/
+      create-checkout/route.ts
+      portal/route.ts
+components/
+  ui/                   ← shadcn generated components (do not edit manually)
+  scan/                 ← scan-specific components (ScoreRing, FeedbackItem, etc.)
+  layout/               ← Navbar, Footer, Sidebar
+  landing/              ← landing page sections
+lib/
+  supabase.ts           ← Supabase client setup
+  anthropic.ts          ← Anthropic SDK setup
+  parsers.ts            ← pdf-parse and mammoth resume parsing logic
+  utils.ts              ← shared helper functions
+  types.ts              ← all shared TypeScript types and interfaces
+docs/
+  PRD.md                ← full product requirements document
+```
+
+## Design system
+
+### Color tokens
+These are defined as CSS variables in `globals.css` and as Tailwind custom colors in `tailwind.config.ts`. Always use these — never hardcode hex values in components.
+```
+bg-base:        #0f1210   page background
+bg-surface:     #161a17   cards, sidebars, panels
+bg-raised:      #1c2120   elevated elements, inputs
+bg-hover:       #222825   hover states
+border:         #2a3230   default borders
+border-strong:  #374440   emphasized borders
+accent:         #4cc9a0   primary accent (emerald/teal)
+accent-dim:     #2a5c4a   accent borders
+accent-muted:   #1a3830   accent fill backgrounds
+text-primary:   #e8ede9   primary text (warm off-white)
+text-secondary: #7a9088   muted text, labels
+text-tertiary:  #4a5e58   hints, placeholders, metadata
+danger:         #e05555   errors, high severity, missing keywords
+warning:        #d4883a   amber, mid scores, medium severity
+success:        #4cc9a0   good scores, matched keywords (same as accent)
+```
+
+### Typography
+- Sans font: system-ui / Tailwind default sans stack — never use Inter, Roboto, or Arial
+- Mono font: `font-mono` (Courier New) for score labels, keyword pills, metadata, stat readouts, any data-y text
+- Font weights: 400 for body, 500 for headings and labels — never use 600 or 700
+- Always sentence case — never ALL CAPS or Title Case in any UI copy
+- No mid-sentence bolding in UI text
+
+### Spacing and radius
+- Card border radius: 12px (`rounded-card`)
+- Element border radius: 8px (`rounded-element`)
+- Pill border radius: 9999px (`rounded-pill`)
+- Borders are always `0.5px` — never `1px` or thicker except focus rings
+- No box shadows anywhere — depth comes from background color layering only
+- No gradients anywhere in the UI
+
+## TypeScript conventions
+- All shared types live in `lib/types.ts`
+- Always type API request and response bodies explicitly
+- Never use `any` — use `unknown` and narrow the type if needed
+- Use `zod` for runtime schema validation of Claude's JSON responses and API request bodies
+
+## General rules
+- Never use the Pages Router — always App Router
+- Never use `useEffect` to fetch data — use server components or React Query
+- Always handle loading and error states in every component that fetches data
+- Never commit `.env.local` — all secrets stay in environment variables
+- Keep API routes thin — business logic lives in `lib/` not in `route.ts` files
+- Always use `next/image` for images, never a bare `<img>` tag
+- When in doubt about a product decision refer to `docs/PRD.md`
