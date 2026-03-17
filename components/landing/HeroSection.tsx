@@ -24,24 +24,24 @@ export function HeroSection() {
       <GridPattern
         width={40}
         height={40}
-        className="stroke-accent/55 fill-accent/5 [mask-image:radial-gradient(ellipse_80%_70%_at_50%_0%,white,transparent)]"
+        className="stroke-accent/30 fill-accent/3 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_0%,white,transparent)]"
       />
       <div className="relative mx-auto max-w-6xl px-4 pt-16 pb-12 sm:px-6 sm:pt-20 sm:pb-16">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="inline-flex items-center rounded-pill border border-accent-dim bg-accent-muted px-3 py-1 text-xs font-medium text-accent">
+          <p className="inline-flex items-center rounded-element border border-accent-dim bg-accent-muted px-3 py-1 text-xs font-medium text-accent">
             Built for tech job seekers • ATS-aware • Line-level control
           </p>
 
           <TypingAnimation
             as="h1"
             duration={45}
-            className="mt-6 text-4xl font-medium leading-tight tracking-normal text-text-primary sm:text-5xl"
+            className="mt-6 text-5lg font-medium leading-tight tracking-normal text-text-primary sm:text-5xl"
           >
             Make your resume match the role without losing your voice
           </TypingAnimation>
 
-          <p className="mt-5 text-lg leading-8 text-text-secondary">
-            Score your resume, fix what matters, and export.
+          <p className="mt-5 text-xl leading-8 text-text-secondary">
+          Built for engineers who want control over every change.
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">

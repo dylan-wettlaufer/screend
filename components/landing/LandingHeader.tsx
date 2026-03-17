@@ -32,7 +32,7 @@ export function LandingHeader() {
             Sign in
           </Button>
           <Button size="sm" aria-disabled="true" className="hover:bg-accent/90">
-            Go to dashboard
+            Join waitlist
           </Button>
         </div>
       </div>
