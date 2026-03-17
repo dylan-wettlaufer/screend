@@ -48,21 +48,37 @@ docs/
 ### Color tokens
 These are defined as CSS variables in `globals.css` and as Tailwind custom colors in `tailwind.config.ts`. Always use these — never hardcode hex values in components.
 ```
-bg-base:        #0f1210   page background
-bg-surface:     #161a17   cards, sidebars, panels
-bg-raised:      #1c2120   elevated elements, inputs
-bg-hover:       #222825   hover states
-border:         #2a3230   default borders
-border-strong:  #374440   emphasized borders
-accent:         #4cc9a0   primary accent (emerald/teal)
-accent-dim:     #2a5c4a   accent borders
-accent-muted:   #1a3830   accent fill backgrounds
-text-primary:   #e8ede9   primary text (warm off-white)
-text-secondary: #7a9088   muted text, labels
-text-tertiary:  #4a5e58   hints, placeholders, metadata
-danger:         #e05555   errors, high severity, missing keywords
-warning:        #d4883a   amber, mid scores, medium severity
-success:        #4cc9a0   good scores, matched keywords (same as accent)
+These are defined as CSS variables in `globals.css` and as Tailwind custom colors
+via @theme inline. Always use these — never hardcode hex values in components.
+
+--bg-base:        #0a0a0b   page background (zinc, near black)
+--bg-surface:     #111113   cards, sidebars, panels
+--bg-raised:      #18181b   elevated elements, inputs
+--bg-hover:       #212126   hover states
+--border:         #27272a   default borders (CSS var: --border-screend)
+--border-strong:  #3f3f46   emphasized borders
+--accent:         #3b82f6   primary accent — electric blue (CSS var: --accent-screend)
+--accent-subtle:  #17171a   accent background — no blue tints, neutral only
+--cyan:           #67e8f9   secondary accent — positive states, matched keywords
+--text-primary:   #fafafa   primary text (pure white)
+--text-secondary: #a1a1aa   muted text, labels
+--text-tertiary:  #71717a   hints, placeholders, metadata
+--danger:         #f87171   errors, high severity, missing keywords
+--warning:        #fb923c   mid scores, medium severity
+--success:        #67e8f9   good scores, matched keywords (same as cyan)
+
+### Color usage rules — follow these strictly
+- Blue (#3b82f6): buttons, score ring, progress bars, active states, links, focus rings
+- Cyan (#67e8f9): matched keywords, accepted feedback items, hero headline accent line, positive indicators, checkmarks, success states
+- Red (#f87171): missing keywords, high severity dots, error states, destructive actions
+- Never use blue as a background fill — use --accent-subtle (#17171a) only
+- Never hardcode any hex value in a component — always reference the CSS variable
+- Primary button text is #ffffff not black
+- Score bars use a single blue (#3b82f6) at varying opacity based on score strength:
+  100% = perfect, 85% = good, 65% = mid, 40% = low, never below 30%
+- Matched keyword pills: bg rgba(103,232,249,0.08), text #67e8f9, border rgba(103,232,249,0.2)
+- Missing keyword pills: bg var(--bg-raised), text #f87171, border var(--border-strong)
+- Accepted feedback items: bg rgba(103,232,249,0.04), border rgba(103,232,249,0.15)
 ```
 
 ### Typography
