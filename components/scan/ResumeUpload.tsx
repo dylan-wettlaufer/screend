@@ -11,6 +11,17 @@ const ACCEPTED_TYPES = [
 ]
 const ACCEPTED_EXTENSIONS = '.pdf,.docx'
 
+const ROLE_TRACKS = [
+  { value: 'swe',       label: 'Software engineer' },
+  { value: 'backend',   label: 'Backend engineer' },
+  { value: 'frontend',  label: 'Frontend engineer' },
+  { value: 'fullstack', label: 'Full stack engineer' },
+  { value: 'data',      label: 'Data engineer' },
+  { value: 'devops',    label: 'DevOps / platform engineer' },
+  { value: 'ml',        label: 'Machine learning engineer' },
+  { value: 'mobile',    label: 'Mobile engineer' },
+]
+
 export function ResumeUpload() {
   const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -19,6 +30,7 @@ export function ResumeUpload() {
   const [dragOver, setDragOver] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [text, setText] = useState('')
+  const [roleTrack, setRoleTrack] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -86,6 +98,7 @@ export function ResumeUpload() {
     try {
       const formData = new FormData()
       formData.append('mode', 'general')
+      if (roleTrack) formData.append('role_track', roleTrack)
 
       if (inputMode === 'file' && file) {
         formData.append('file', file)
@@ -115,6 +128,43 @@ export function ResumeUpload() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      {/* Role track selector */}
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between">
+          <label
+            htmlFor="role-track"
+            className="text-xs"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Role track
+          </label>
+          <span
+            className="font-mono text-xs"
+            style={{ color: 'var(--color-text-tertiary)' }}
+          >
+            optional
+          </span>
+        </div>
+        <select
+          id="role-track"
+          value={roleTrack}
+          onChange={(e) => setRoleTrack(e.target.value)}
+          className="w-full rounded-element border px-3 py-2 text-sm appearance-none focus:outline-none transition-colors"
+          style={{
+            background: 'var(--color-bg-raised)',
+            borderColor: roleTrack ? 'var(--color-border-strong)' : 'var(--color-border)',
+            color: roleTrack ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)',
+          }}
+        >
+          <option value="">General tech (no specific role)</option>
+          {ROLE_TRACKS.map((track) => (
+            <option key={track.value} value={track.value}>
+              {track.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {inputMode === 'file' ? (
         <>
           <div
