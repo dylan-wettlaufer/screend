@@ -5,6 +5,10 @@ import type { FeedbackItem as FeedbackItemType } from '@/lib/types'
 
 interface FeedbackItemProps {
   item: FeedbackItemType
+  isAccepted: boolean
+  isDismissed: boolean
+  onAccept: () => void
+  onDismiss: () => void
 }
 
 const severityStyles: Record<FeedbackItemType['severity'], { dot: string; label: string }> = {
@@ -15,7 +19,7 @@ const severityStyles: Record<FeedbackItemType['severity'], { dot: string; label:
 
 const DESCRIPTION_THRESHOLD = 120
 
-export function FeedbackItem({ item }: FeedbackItemProps) {
+export function FeedbackItem({ item, isAccepted, isDismissed, onAccept, onDismiss }: FeedbackItemProps) {
   const { dot, label: severityLabel } = severityStyles[item.severity]
   const hasDiff = !!(item.original_line && item.suggested_line)
   const isLong = item.description.length > DESCRIPTION_THRESHOLD
@@ -27,12 +31,43 @@ export function FeedbackItem({ item }: FeedbackItemProps) {
       ? item.description.slice(0, DESCRIPTION_THRESHOLD).trimEnd() + '…'
       : item.description
 
+  // Dismissed state — collapsed single row
+  if (isDismissed) {
+    return (
+      <div
+        className="rounded-card border px-4 py-3 flex items-center gap-2.5"
+        style={{
+          background: 'var(--color-bg-surface)',
+          borderColor: 'var(--color-border)',
+        }}
+      >
+        <div className="shrink-0 h-2 w-2 rounded-full opacity-30" style={{ background: dot }} />
+        <p
+          className="flex-1 text-sm line-through truncate"
+          style={{ color: 'var(--color-text-tertiary)' }}
+        >
+          {item.title}
+        </p>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="shrink-0 font-mono text-xs transition-colors"
+          style={{ color: 'var(--color-text-tertiary)' }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-text-secondary)')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-tertiary)')}
+        >
+          undo
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div
-      className="rounded-card border p-4 flex flex-col gap-3"
+      className="rounded-card border p-4 flex flex-col gap-3 transition-colors"
       style={{
-        background: 'var(--color-bg-surface)',
-        borderColor: 'var(--color-border)',
+        background: isAccepted ? 'var(--color-accent-muted)' : 'var(--color-bg-surface)',
+        borderColor: isAccepted ? 'var(--color-accent-dim)' : 'var(--color-border)',
       }}
     >
       {/* Header row */}
@@ -51,8 +86,8 @@ export function FeedbackItem({ item }: FeedbackItemProps) {
               className="font-mono text-xs rounded-pill px-2 py-0.5 border"
               style={{
                 color: 'var(--color-text-secondary)',
-                borderColor: 'var(--color-border)',
-                background: 'var(--color-bg-raised)',
+                borderColor: isAccepted ? 'var(--color-accent-dim)' : 'var(--color-border)',
+                background: isAccepted ? 'transparent' : 'var(--color-bg-raised)',
               }}
             >
               {item.section}
@@ -94,27 +129,18 @@ export function FeedbackItem({ item }: FeedbackItemProps) {
       {hasDiff && (
         <div
           className="flex flex-col gap-1.5 rounded-element overflow-hidden border"
-          style={{ borderColor: 'var(--color-border)' }}
+          style={{ borderColor: isAccepted ? 'var(--color-accent-dim)' : 'var(--color-border)' }}
         >
           <div className="px-3 py-2 flex gap-2 items-start" style={{ background: '#2a1515' }}>
-            <span
-              className="font-mono text-xs shrink-0 mt-0.5"
-              style={{ color: 'var(--color-danger)' }}
-            >
+            <span className="font-mono text-xs shrink-0 mt-0.5" style={{ color: 'var(--color-danger)' }}>
               −
             </span>
-            <p
-              className="font-mono text-xs leading-relaxed line-through"
-              style={{ color: '#e07070' }}
-            >
+            <p className="font-mono text-xs leading-relaxed line-through" style={{ color: '#e07070' }}>
               {item.original_line}
             </p>
           </div>
           <div className="px-3 py-2 flex gap-2 items-start" style={{ background: '#152a1e' }}>
-            <span
-              className="font-mono text-xs shrink-0 mt-0.5"
-              style={{ color: 'var(--color-success)' }}
-            >
+            <span className="font-mono text-xs shrink-0 mt-0.5" style={{ color: 'var(--color-success)' }}>
               +
             </span>
             <p className="font-mono text-xs leading-relaxed" style={{ color: '#70e0a0' }}>
@@ -123,6 +149,68 @@ export function FeedbackItem({ item }: FeedbackItemProps) {
           </div>
         </div>
       )}
+
+      {/* Action buttons */}
+      <div className="flex items-center gap-2 pt-0.5">
+        {isAccepted ? (
+          <span
+            className="flex items-center gap-1.5 font-mono text-xs"
+            style={{ color: 'var(--color-accent)' }}
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path
+                d="M2 6l3 3 5-5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            accepted
+          </span>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={onAccept}
+              className="rounded-element border px-3 py-1 font-mono text-xs transition-colors"
+              style={{
+                borderColor: 'var(--color-accent-dim)',
+                color: 'var(--color-accent)',
+                background: 'transparent',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--color-accent-muted)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent'
+              }}
+            >
+              Accept
+            </button>
+            <button
+              type="button"
+              onClick={onDismiss}
+              className="rounded-element border px-3 py-1 font-mono text-xs transition-colors"
+              style={{
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-text-secondary)',
+                background: 'transparent',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#5a2020'
+                e.currentTarget.style.color = 'var(--color-danger)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--color-border)'
+                e.currentTarget.style.color = 'var(--color-text-secondary)'
+              }}
+            >
+              Dismiss
+            </button>
+          </>
+        )}
+      </div>
     </div>
   )
 }
