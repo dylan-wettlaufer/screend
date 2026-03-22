@@ -3,7 +3,6 @@ import { Badge } from "@/components/ui/badge";
 import { TypingAnimation } from "@/components/ui/typing-animation";
 import { ShineBorder } from "@/components/ui/shine-border";
 import { NumberTicker } from "@/components/ui/number-ticker";
-import {GridPattern} from "@/components/ui/grid-pattern";
 import Link from "next/link";
 
 const scoreBars = [
@@ -19,6 +18,7 @@ const roleTracks = ["swe", "backend", "frontend", "devops", "data", "ml", "mobil
 export function HeroSection() {
   return (
     <section className="bg-bg-base">
+      
       <div className="mx-auto max-w-6xl px-4 pt-16 pb-12 sm:px-6 sm:pt-20 sm:pb-16">
         <div className="mx-auto max-w-3xl text-center">
           
@@ -47,8 +47,8 @@ export function HeroSection() {
           </h1>
 
           {/* Subtext */}
-          <p className="mt-5 text-xl leading-9 text-text-primary">
-            Built for engineers who want control over every change.
+          <p className="mt-5 text-lg leading-9 text-text-secondary">
+          Screend uses advanced analysis to score your experience against job requirements and generate a perfectly tailored resume that beats the ATS every time.
           </p>
 
           {/* CTAs */}
