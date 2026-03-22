@@ -53,6 +53,7 @@ export interface ScanRecord {
   mode: ScanMode
   role_track: string | null
   resume_text: string
+  jd_text: string | null
   overall_score: number
   score_ats: number
   score_content: number

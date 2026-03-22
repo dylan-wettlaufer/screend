@@ -3,7 +3,7 @@ import { redirect, notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ScoreRing } from '@/components/scan/ScoreRing'
 import { SubScoreBar } from '@/components/scan/SubScoreBar'
-import { FeedbackItem } from '@/components/scan/FeedbackItem'
+import { ScanResultTabs } from '@/components/scan/ScanResultTabs'
 import type { ScanRecord } from '@/lib/types'
 
 interface ScanResultPageProps {
@@ -26,7 +26,6 @@ export default async function ScanResultPage({ params }: ScanResultPageProps) {
 
   const supabase = createAdminClient()
 
-  // Look up user's Supabase ID
   const { data: dbUser } = await supabase
     .from('users')
     .select('id')
@@ -35,7 +34,6 @@ export default async function ScanResultPage({ params }: ScanResultPageProps) {
 
   if (!dbUser) redirect('/sign-in')
 
-  // Fetch scan, ensuring it belongs to the authenticated user
   const { data: scan } = await supabase
     .from('scans')
     .select('*')
@@ -47,7 +45,6 @@ export default async function ScanResultPage({ params }: ScanResultPageProps) {
 
   const typedScan = scan as unknown as ScanRecord
 
-  // Guard: if AI scores aren't present yet (shouldn't happen, but just in case)
   if (typedScan.overall_score == null) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--color-bg-base)' }}>
@@ -59,6 +56,15 @@ export default async function ScanResultPage({ params }: ScanResultPageProps) {
   }
 
   const feedback = Array.isArray(typedScan.feedback_json) ? typedScan.feedback_json : []
+  const keywordsMatched = Array.isArray(typedScan.keywords_matched) ? typedScan.keywords_matched : []
+  const keywordsMissing = Array.isArray(typedScan.keywords_missing) ? typedScan.keywords_missing : []
+  const isJobMatch = typedScan.mode === 'job_match'
+
+  const jdLabel = typedScan.jd_title
+    ? typedScan.jd_company
+      ? `${typedScan.jd_title} at ${typedScan.jd_company}`
+      : typedScan.jd_title
+    : null
 
   return (
     <main className="min-h-screen px-4 pt-16 pb-20" style={{ background: 'var(--color-bg-base)' }}>
@@ -73,15 +79,24 @@ export default async function ScanResultPage({ params }: ScanResultPageProps) {
             {new Date(typedScan.created_at).toLocaleDateString('en-US', {
               month: 'short', day: 'numeric', year: 'numeric',
             })}
-            {typedScan.role_track && (
-              <span> · {typedScan.role_track}</span>
+            {typedScan.role_track && <span> · {typedScan.role_track}</span>}
+            {isJobMatch && (
+              <span className="ml-1 rounded-pill border px-1.5 py-0.5" style={{
+                borderColor: 'var(--color-accent-dim)',
+                background: 'var(--color-accent-muted)',
+                color: 'var(--color-accent)',
+              }}>
+                job match
+              </span>
             )}
           </p>
-          <h1
-            className="text-xl font-medium"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
+          <h1 className="text-xl font-medium" style={{ color: 'var(--color-text-primary)' }}>
             Resume analysis
+            {jdLabel && (
+              <span className="ml-2 text-base font-normal" style={{ color: 'var(--color-text-secondary)' }}>
+                · {jdLabel}
+              </span>
+            )}
           </h1>
         </div>
 
@@ -90,7 +105,6 @@ export default async function ScanResultPage({ params }: ScanResultPageProps) {
           {/* Left panel — scores */}
           <div className="flex flex-col gap-4">
 
-            {/* Score ring card */}
             <div
               className="rounded-card border p-6 flex flex-col items-center"
               style={{ background: 'var(--color-bg-surface)', borderColor: 'var(--color-border)' }}
@@ -98,7 +112,6 @@ export default async function ScanResultPage({ params }: ScanResultPageProps) {
               <ScoreRing score={typedScan.overall_score} />
             </div>
 
-            {/* Sub-scores card */}
             <div
               className="rounded-card border p-5 flex flex-col gap-4"
               style={{ background: 'var(--color-bg-surface)', borderColor: 'var(--color-border)' }}
@@ -120,42 +133,13 @@ export default async function ScanResultPage({ params }: ScanResultPageProps) {
 
           </div>
 
-          {/* Right panel — feedback */}
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between mb-1">
-              <p
-                className="text-xs font-medium uppercase tracking-widest"
-                style={{ color: 'var(--color-text-tertiary)' }}
-              >
-                Suggestions
-              </p>
-              <span
-                className="font-mono text-xs rounded-pill border px-2 py-0.5"
-                style={{
-                  color: 'var(--color-text-secondary)',
-                  borderColor: 'var(--color-border)',
-                  background: 'var(--color-bg-raised)',
-                }}
-              >
-                {feedback.length} items
-              </span>
-            </div>
-
-            {feedback.length === 0 ? (
-              <div
-                className="rounded-card border px-5 py-8 text-center"
-                style={{ background: 'var(--color-bg-surface)', borderColor: 'var(--color-border)' }}
-              >
-                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                  No suggestions — your resume looks great.
-                </p>
-              </div>
-            ) : (
-              feedback.map((item) => (
-                <FeedbackItem key={item.id} item={item} />
-              ))
-            )}
-          </div>
+          {/* Right panel — tabbed feedback + keywords */}
+          <ScanResultTabs
+            feedback={feedback}
+            keywordsMatched={keywordsMatched}
+            keywordsMissing={keywordsMissing}
+            isJobMatch={isJobMatch}
+          />
 
         </div>
       </div>

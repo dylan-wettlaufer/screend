@@ -2,7 +2,7 @@
 
 import { useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import type { AnalyzeResponse, AnalyzeErrorResponse } from '@/lib/types'
+import type { AnalyzeResponse, AnalyzeErrorResponse, ScanMode } from '@/lib/types'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024
 const ACCEPTED_TYPES = [
@@ -22,71 +22,133 @@ const ROLE_TRACKS = [
   { value: 'mobile',    label: 'Mobile engineer' },
 ]
 
-export function ResumeUpload() {
-  const router = useRouter()
+function UploadZone({
+  file,
+  onFile,
+  onError,
+  label,
+}: {
+  file: File | null
+  onFile: (f: File) => void
+  onError: (msg: string) => void
+  label: string
+}) {
   const inputRef = useRef<HTMLInputElement>(null)
-
-  const [inputMode, setInputMode] = useState<'file' | 'text'>('file')
   const [dragOver, setDragOver] = useState(false)
-  const [file, setFile] = useState<File | null>(null)
-  const [text, setText] = useState('')
-  const [roleTrack, setRoleTrack] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  function switchToText() {
-    setInputMode('text')
-    setFile(null)
-    setError(null)
-  }
-
-  function switchToFile() {
-    setInputMode('file')
-    setText('')
-    setError(null)
-  }
 
   function validateFile(f: File): string | null {
-    if (!ACCEPTED_TYPES.includes(f.type)) {
-      return 'Only PDF and DOCX files are supported.'
-    }
-    if (f.size > MAX_FILE_SIZE) {
-      return 'File exceeds the 5 MB limit.'
-    }
+    if (!ACCEPTED_TYPES.includes(f.type)) return 'Only PDF and DOCX files are supported.'
+    if (f.size > MAX_FILE_SIZE) return 'File exceeds the 5 MB limit.'
     return null
   }
 
-  function handleFileChange(f: File) {
+  function handleFile(f: File) {
     const err = validateFile(f)
-    if (err) {
-      setError(err)
-      setFile(null)
-      return
-    }
-    setError(null)
-    setFile(f)
-  }
-
-  const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0]
-    if (f) handleFileChange(f)
+    if (err) { onError(err); return }
+    onFile(f)
   }
 
   const onDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     setDragOver(false)
     const f = e.dataTransfer.files?.[0]
-    if (f) handleFileChange(f)
-  }, [])
+    if (f) handleFile(f)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    setDragOver(true)
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => inputRef.current?.click()}
+      onKeyDown={(e) => e.key === 'Enter' && inputRef.current?.click()}
+      onDrop={onDrop}
+      onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+      onDragLeave={() => setDragOver(false)}
+      className={[
+        'flex flex-col items-center justify-center gap-3 rounded-card border px-6 py-10 text-center transition-colors cursor-pointer select-none',
+        dragOver
+          ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)]'
+          : file
+          ? 'border-[var(--color-accent-dim)] bg-[var(--color-bg-raised)]'
+          : 'border-[var(--color-border)] bg-[var(--color-bg-raised)] hover:border-[var(--color-border-strong)]',
+      ].join(' ')}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        accept={ACCEPTED_EXTENSIONS}
+        className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
+      />
+      <div className="flex h-10 w-10 items-center justify-center rounded-element bg-[var(--color-bg-hover)]">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path
+            d="M10 2L10 13M10 2L7 5M10 2L13 5"
+            stroke="var(--color-accent)"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2"
+            stroke="var(--color-text-secondary)"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+        </svg>
+      </div>
+      {file ? (
+        <p className="font-mono text-sm text-[var(--color-text-primary)]">{file.name}</p>
+      ) : (
+        <>
+          <p className="text-sm text-[var(--color-text-primary)]">
+            Drop your {label} here or{' '}
+            <span className="text-[var(--color-accent)]">browse</span>
+          </p>
+          <p className="font-mono text-xs text-[var(--color-text-tertiary)]">
+            PDF or DOCX · max 5 MB
+          </p>
+        </>
+      )}
+    </div>
+  )
+}
+
+export function ResumeUpload() {
+  const router = useRouter()
+
+  const [mode, setMode] = useState<ScanMode>('general')
+
+  // Resume input
+  const [resumeInputMode, setResumeInputMode] = useState<'file' | 'text'>('file')
+  const [resumeFile, setResumeFile] = useState<File | null>(null)
+  const [resumeText, setResumeText] = useState('')
+
+  // JD input
+  const [jdInputMode, setJdInputMode] = useState<'file' | 'text'>('text')
+  const [jdFile, setJdFile] = useState<File | null>(null)
+  const [jdText, setJdText] = useState('')
+
+  const [roleTrack, setRoleTrack] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  function switchMode(next: ScanMode) {
+    setMode(next)
+    setError(null)
   }
 
-  const onDragLeave = () => setDragOver(false)
+  const resumeReady =
+    resumeInputMode === 'file' ? !!resumeFile : !!resumeText.trim()
 
-  const isSubmitDisabled = loading || (inputMode === 'file' ? !file : !text.trim())
+  const jdReady =
+    mode === 'general'
+      ? true
+      : jdInputMode === 'file'
+      ? !!jdFile
+      : !!jdText.trim()
+
+  const isSubmitDisabled = loading || !resumeReady || !jdReady
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -97,20 +159,24 @@ export function ResumeUpload() {
 
     try {
       const formData = new FormData()
-      formData.append('mode', 'general')
+      formData.append('mode', mode)
       if (roleTrack) formData.append('role_track', roleTrack)
 
-      if (inputMode === 'file' && file) {
-        formData.append('file', file)
+      if (resumeInputMode === 'file' && resumeFile) {
+        formData.append('file', resumeFile)
       } else {
-        formData.append('resume_text', text)
+        formData.append('resume_text', resumeText)
       }
 
-      const res = await fetch('/api/analyze', {
-        method: 'POST',
-        body: formData,
-      })
+      if (mode === 'job_match') {
+        if (jdInputMode === 'file' && jdFile) {
+          formData.append('jd_file', jdFile)
+        } else {
+          formData.append('jd_text', jdText)
+        }
+      }
 
+      const res = await fetch('/api/analyze', { method: 'POST', body: formData })
       const data: AnalyzeResponse | AnalyzeErrorResponse = await res.json()
 
       if (!res.ok) {
@@ -128,7 +194,36 @@ export function ResumeUpload() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      {/* Role track selector */}
+
+      {/* Mode toggle */}
+      <div
+        className="flex rounded-element border p-0.5 gap-0.5"
+        style={{ borderColor: 'var(--color-border)', background: 'var(--color-bg-raised)' }}
+      >
+        {(['general', 'job_match'] as ScanMode[]).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => switchMode(m)}
+            className="flex-1 rounded-[6px] py-1.5 text-sm transition-colors"
+            style={
+              mode === m
+                ? {
+                    background: 'var(--color-bg-hover)',
+                    color: 'var(--color-text-primary)',
+                  }
+                : {
+                    background: 'transparent',
+                    color: 'var(--color-text-tertiary)',
+                  }
+            }
+          >
+            {m === 'general' ? 'General scan' : 'Job match'}
+          </button>
+        ))}
+      </div>
+
+      {/* Role track */}
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between">
           <label
@@ -138,10 +233,7 @@ export function ResumeUpload() {
           >
             Role track
           </label>
-          <span
-            className="font-mono text-xs"
-            style={{ color: 'var(--color-text-tertiary)' }}
-          >
+          <span className="font-mono text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
             optional
           </span>
         </div>
@@ -165,100 +257,109 @@ export function ResumeUpload() {
         </select>
       </div>
 
-      {inputMode === 'file' ? (
-        <>
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => inputRef.current?.click()}
-            onKeyDown={(e) => e.key === 'Enter' && inputRef.current?.click()}
-            onDrop={onDrop}
-            onDragOver={onDragOver}
-            onDragLeave={onDragLeave}
-            className={[
-              'flex flex-col items-center justify-center gap-3 rounded-card border px-6 py-12 text-center transition-colors cursor-pointer select-none',
-              dragOver
-                ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)]'
-                : file
-                ? 'border-[var(--color-accent-dim)] bg-[var(--color-bg-raised)]'
-                : 'border-[var(--color-border)] bg-[var(--color-bg-raised)] hover:border-[var(--color-border-strong)]',
-            ].join(' ')}
-          >
-            <input
-              ref={inputRef}
-              type="file"
-              accept={ACCEPTED_EXTENSIONS}
-              className="hidden"
-              onChange={onInputChange}
+      {/* Resume input */}
+      <div className="flex flex-col gap-2">
+        <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+          Resume
+        </p>
+        {resumeInputMode === 'file' ? (
+          <>
+            <UploadZone
+              file={resumeFile}
+              onFile={(f) => { setResumeFile(f); setError(null) }}
+              onError={setError}
+              label="resume"
             />
-            <div className="flex h-10 w-10 items-center justify-center rounded-element bg-[var(--color-bg-hover)]">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <path
-                  d="M10 2L10 13M10 2L7 5M10 2L13 5"
-                  stroke="var(--color-accent)"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2"
-                  stroke="var(--color-text-secondary)"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-            {file ? (
-              <p className="font-mono text-sm text-[var(--color-text-primary)]">{file.name}</p>
-            ) : (
-              <>
-                <p className="text-sm text-[var(--color-text-primary)]">
-                  Drop your resume here or{' '}
-                  <span className="text-[var(--color-accent)]">browse</span>
-                </p>
-                <p className="font-mono text-xs text-[var(--color-text-tertiary)]">
-                  PDF or DOCX · max 5 MB
-                </p>
-              </>
-            )}
-          </div>
-
-          <p className="text-xs text-[var(--color-text-tertiary)] text-center">
-            or{' '}
-            <button
-              type="button"
-              onClick={switchToText}
-              className="text-[var(--color-text-secondary)] underline underline-offset-2 hover:text-[var(--color-text-primary)] transition-colors"
-            >
-              paste text instead
-            </button>
-          </p>
-        </>
-      ) : (
-        <>
-          <div className="flex flex-col gap-2">
-            <p className="text-xs text-[var(--color-text-tertiary)] text-right">
+            <p className="text-xs text-center" style={{ color: 'var(--color-text-tertiary)' }}>
+              or{' '}
               <button
                 type="button"
-                onClick={switchToFile}
-                className="text-[var(--color-text-secondary)] underline underline-offset-2 hover:text-[var(--color-text-primary)] transition-colors"
+                onClick={() => { setResumeInputMode('text'); setResumeFile(null); setError(null) }}
+                className="underline underline-offset-2 transition-colors"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                paste text instead
+              </button>
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-xs text-right" style={{ color: 'var(--color-text-tertiary)' }}>
+              <button
+                type="button"
+                onClick={() => { setResumeInputMode('file'); setResumeText(''); setError(null) }}
+                className="underline underline-offset-2 transition-colors"
+                style={{ color: 'var(--color-text-secondary)' }}
               >
                 upload a file instead
               </button>
             </p>
             <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
+              value={resumeText}
+              onChange={(e) => setResumeText(e.target.value)}
               placeholder="Paste your resume here…"
-              rows={16}
-              className="w-full rounded-card border border-[var(--color-border)] bg-[var(--color-bg-raised)] px-4 py-3 font-mono text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] resize-none focus:outline-none focus:border-[var(--color-border-strong)] transition-colors"
+              rows={12}
+              className="w-full rounded-card border px-4 py-3 font-mono text-sm resize-none focus:outline-none transition-colors"
+              style={{
+                background: 'var(--color-bg-raised)',
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-text-primary)',
+              }}
             />
+          </>
+        )}
+      </div>
+
+      {/* Job description input — job_match mode only */}
+      {mode === 'job_match' && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+              Job description
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setJdInputMode((m) => (m === 'file' ? 'text' : 'file'))
+                setJdFile(null)
+                setJdText('')
+                setError(null)
+              }}
+              className="font-mono text-xs underline underline-offset-2 transition-colors"
+              style={{ color: 'var(--color-text-tertiary)' }}
+            >
+              {jdInputMode === 'file' ? 'paste text instead' : 'upload a file instead'}
+            </button>
           </div>
-        </>
+          {jdInputMode === 'file' ? (
+            <UploadZone
+              file={jdFile}
+              onFile={(f) => { setJdFile(f); setError(null) }}
+              onError={setError}
+              label="job description"
+            />
+          ) : (
+            <textarea
+              value={jdText}
+              onChange={(e) => setJdText(e.target.value)}
+              placeholder="Paste the job description here…"
+              rows={10}
+              className="w-full rounded-card border px-4 py-3 font-mono text-sm resize-none focus:outline-none transition-colors"
+              style={{
+                background: 'var(--color-bg-raised)',
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-text-primary)',
+              }}
+            />
+          )}
+        </div>
       )}
 
       {error && (
-        <p className="rounded-element bg-[#2a1515] px-4 py-2.5 font-mono text-sm text-[var(--color-danger)]">
+        <p
+          className="rounded-element px-4 py-2.5 font-mono text-sm"
+          style={{ background: '#2a1515', color: 'var(--color-danger)' }}
+        >
           {error}
         </p>
       )}
@@ -266,9 +367,14 @@ export function ResumeUpload() {
       <button
         type="submit"
         disabled={isSubmitDisabled}
-        className="rounded-element bg-[var(--color-accent)] px-5 py-2.5 text-sm font-medium text-[var(--color-bg-base)] transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+        className="rounded-element px-5 py-2.5 text-sm font-medium transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+        style={{ background: 'var(--color-accent)', color: 'var(--color-bg-base)' }}
       >
-        {loading ? 'Scanning…' : 'Scan resume'}
+        {loading
+          ? 'Scanning…'
+          : mode === 'job_match'
+          ? 'Match to job'
+          : 'Scan resume'}
       </button>
     </form>
   )

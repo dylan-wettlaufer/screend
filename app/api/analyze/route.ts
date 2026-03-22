@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { currentUser } from '@clerk/nextjs/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { parseResume, isAcceptedMimeType } from '@/lib/parsers'
-import { analyzeResume } from '@/lib/gemini'
+import { analyzeResume, analyzeResumeWithJD } from '@/lib/gemini'
 import type { AnalyzeResponse, AnalyzeErrorResponse, ScanMode } from '@/lib/types'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5 MB
@@ -30,7 +30,7 @@ export async function POST(
   let fileBuffer: Buffer | null = null
   let fileMimeType: string | null = null
 
-  // Determine input: text paste or file upload
+  // Determine resume input: text paste or file upload
   const pastedText = formData.get('resume_text')
   if (typeof pastedText === 'string' && pastedText.trim()) {
     resume_text = pastedText.trim()
@@ -71,6 +71,53 @@ export async function POST(
     }
   }
 
+  // Parse job description for job_match mode
+  let jd_text: string | null = null
+  if (mode === 'job_match') {
+    const pastedJD = formData.get('jd_text')
+    if (typeof pastedJD === 'string' && pastedJD.trim()) {
+      jd_text = pastedJD.trim()
+    } else {
+      const jdFile = formData.get('jd_file')
+      if (!(jdFile instanceof File)) {
+        return NextResponse.json(
+          { error: 'A job description is required for job match mode.' },
+          { status: 400 }
+        )
+      }
+
+      if (jdFile.size > MAX_FILE_SIZE) {
+        return NextResponse.json(
+          { error: 'Job description file exceeds the 5 MB limit.' },
+          { status: 400 }
+        )
+      }
+
+      const jdMimeType = jdFile.type
+      if (!isAcceptedMimeType(jdMimeType)) {
+        return NextResponse.json(
+          { error: 'Unsupported file type for job description. Please upload a PDF or DOCX file.' },
+          { status: 400 }
+        )
+      }
+
+      const jdBuffer = Buffer.from(await jdFile.arrayBuffer())
+      try {
+        jd_text = await parseResume(jdBuffer, jdMimeType)
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to parse job description'
+        return NextResponse.json({ error: message }, { status: 422 })
+      }
+    }
+
+    if (!jd_text?.trim()) {
+      return NextResponse.json(
+        { error: 'Could not read job description content. Try pasting it as text instead.' },
+        { status: 422 }
+      )
+    }
+  }
+
   const supabase = createAdminClient()
 
   const { data: dbUser, error: userError } = await supabase
@@ -105,7 +152,11 @@ export async function POST(
   // Run Gemini analysis
   let aiResult
   try {
-    aiResult = await analyzeResume(resume_text, role_track)
+    if (mode === 'job_match' && jd_text) {
+      aiResult = await analyzeResumeWithJD(resume_text, jd_text, role_track)
+    } else {
+      aiResult = await analyzeResume(resume_text, role_track)
+    }
   } catch (err) {
     console.error('AI analysis error:', err)
     return NextResponse.json({ error: 'Analysis failed, please try again.' }, { status: 500 })
@@ -117,6 +168,7 @@ export async function POST(
     mode,
     role_track,
     resume_text,
+    jd_text,
     resume_file_path,
     overall_score: aiResult.overall_score,
     score_ats: aiResult.scores.ats,

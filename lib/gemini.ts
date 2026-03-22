@@ -50,16 +50,63 @@ Return a JSON object with this exact shape:
   "jd_company": null
 }`
 
-async function callGemini(resumeText: string, roleTrack: string): Promise<ScanResult> {
-  const userMessage = `ROLE TRACK: ${roleTrack}\n\n--- RESUME ---\n${resumeText}`
+const JOB_MATCH_SYSTEM_PROMPT = `You are an expert resume coach, ATS specialist, and technical recruiter with deep knowledge of the tech hiring market. Today's date is ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}. Use this date when evaluating experience dates — do not flag dates as future dates unless they are genuinely after today's date.
 
+Analyze the resume against the job description below and return ONLY a valid JSON object — no markdown, no prose, no code fences — that exactly matches the schema provided.
+
+All five scoring criteria must be evaluated relative to the specific role described in the job description:
+- ATS: standard section headings, absence of tables/graphics/multi-column layouts that break ATS parsers, keyword density, clean formatting. Also check that ATS-critical keywords from the JD appear in the resume. Do not flag missing hyperlinks — the parsing process strips URLs.
+- Content: quantified achievements, strong action verbs, no responsibilities-only bullets, project impact stated clearly. Emphasize whether achievements are relevant to the target role.
+- Writing: grammar, spelling, active voice, conciseness, no clichés or filler phrases
+- Job Match: score based on keyword overlap, required skills coverage, experience level fit, and role/title alignment with the JD. This is the most heavily weighted criterion in job match mode.
+- Ready: section completeness (experience, education, skills, contact), formatting consistency, appropriate length.
+
+Extract and return:
+- keywords_matched: keywords present in both the resume and the JD (tech skills, tools, frameworks, methodologies)
+- keywords_missing: keywords required or strongly preferred in the JD that are absent from the resume
+- jd_title: the job title extracted from the JD (null if unclear)
+- jd_company: the company name extracted from the JD (null if unclear)
+
+Provide 5–10 feedback items, prioritizing gaps that directly reduce job match score. Each feedback item must include an original_line (the exact text from the resume) and a suggested_line where a line-level change is being recommended — set both to null only for high-level structural observations.
+
+Return a JSON object with this exact shape:
+{
+  "overall_score": <integer 0-100>,
+  "scores": {
+    "ats": <integer 0-20>,
+    "content": <integer 0-20>,
+    "writing": <integer 0-20>,
+    "job_match": <integer 0-20>,
+    "ready": <integer 0-20>
+  },
+  "feedback": [
+    {
+      "id": "<unique string>",
+      "severity": "high" | "medium" | "low",
+      "section": "<e.g. Experience, Skills, Summary>",
+      "title": "<short title>",
+      "description": "<actionable explanation>",
+      "original_line": "<exact line from resume, or null>",
+      "suggested_line": "<replacement line, or null>"
+    }
+  ],
+  "keywords_matched": ["<string>"],
+  "keywords_missing": ["<string>"],
+  "jd_title": "<string or null>",
+  "jd_company": "<string or null>"
+}`
+
+async function callGemini(
+  userMessage: string,
+  systemPrompt: string
+): Promise<ScanResult> {
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
     contents: [{ role: 'user', parts: [{ text: userMessage }] }],
     config: {
       temperature: 0,
       responseMimeType: 'application/json',
-      systemInstruction: GENERAL_SCAN_SYSTEM_PROMPT,
+      systemInstruction: systemPrompt,
     },
   })
 
@@ -75,11 +122,26 @@ export async function analyzeResume(
   roleTrack?: string | null
 ): Promise<ScanResult> {
   const track = roleTrack ?? 'General Tech'
+  const userMessage = `ROLE TRACK: ${track}\n\n--- RESUME ---\n${resumeText}`
 
   try {
-    return await callGemini(resumeText, track)
+    return await callGemini(userMessage, GENERAL_SCAN_SYSTEM_PROMPT)
   } catch {
-    // Retry once on failure
-    return await callGemini(resumeText, track)
+    return await callGemini(userMessage, GENERAL_SCAN_SYSTEM_PROMPT)
+  }
+}
+
+export async function analyzeResumeWithJD(
+  resumeText: string,
+  jdText: string,
+  roleTrack?: string | null
+): Promise<ScanResult> {
+  const track = roleTrack ?? 'General Tech'
+  const userMessage = `ROLE TRACK: ${track}\n\n--- RESUME ---\n${resumeText}\n\n--- JOB DESCRIPTION ---\n${jdText}`
+
+  try {
+    return await callGemini(userMessage, JOB_MATCH_SYSTEM_PROMPT)
+  } catch {
+    return await callGemini(userMessage, JOB_MATCH_SYSTEM_PROMPT)
   }
 }
