@@ -7,11 +7,11 @@ import {GridPattern} from "@/components/ui/grid-pattern";
 import Link from "next/link";
 
 const scoreBars = [
-  { label: "ATS", score: 12, max: 20, colorClass: "bg-accent" },
-  { label: "Content", score: 16, max: 20, colorClass: "bg-accent" },
-  { label: "Writing", score: 12, max: 20, colorClass: "bg-accent" },
-  { label: "Job Match", score: 8, max: 20, colorClass: "bg-accent" },
-  { label: "Ready", score: 20, max: 20, colorClass: "bg-accent" },
+  { label: "ATS", score: 12, max: 20, colorClass: "bg-accent", opacity: "opacity-60" },
+  { label: "Content", score: 16, max: 20, colorClass: "bg-accent", opacity: "opacity-80" },
+  { label: "Writing", score: 12, max: 20, colorClass: "bg-accent", opacity: "opacity-60" },
+  { label: "Job Match", score: 8, max: 20, colorClass: "bg-accent", opacity: "opacity-40" },
+  { label: "Ready", score: 20, max: 20, colorClass: "bg-cyan-500", opacity: "opacity-100" },
 ];
 
 const roleTracks = ["swe", "backend", "frontend", "devops", "data", "ml", "mobile"];
@@ -101,7 +101,7 @@ export function HeroSection() {
                     </span>
                     <div className="flex-1 h-1.5 overflow-hidden rounded-pill bg-bg-raised">
                       <div
-                        className={`h-full rounded-pill ${bar.colorClass}`}
+                        className={`h-full rounded-pill ${bar.colorClass} ${bar.opacity}`}
                         style={{ width: `${(bar.score / bar.max) * 100}%` }}
                       />
                     </div>
