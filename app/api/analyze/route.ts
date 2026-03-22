@@ -19,6 +19,47 @@ export async function POST(req: NextRequest): Promise<NextResponse<AnalyzeRespon
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
+  const mode = (formData.get('mode') as ScanMode | null) ?? 'general'
+  const role_track = (formData.get('role_track') as string | null) || null
+
+  // Text paste mode — no file parsing or storage upload needed
+  const pastedText = formData.get('resume_text')
+  if (typeof pastedText === 'string' && pastedText.trim()) {
+    const supabase = createAdminClient()
+
+    const { data: dbUser, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('clerk_user_id', user.id)
+      .single()
+
+    if (userError || !dbUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    const scan_id = crypto.randomUUID()
+
+    const scanInsert: ScanInsert = {
+      user_id: dbUser.id,
+      mode,
+      role_track,
+      resume_text: pastedText.trim(),
+      resume_file_path: null,
+    }
+
+    const { error: insertError } = await supabase
+      .from('scans')
+      .insert({ id: scan_id, ...scanInsert })
+
+    if (insertError) {
+      console.error('Scan insert error:', insertError)
+      return NextResponse.json({ error: 'Failed to save scan' }, { status: 500 })
+    }
+
+    return NextResponse.json({ scan_id, resume_text: pastedText.trim() })
+  }
+
+  // File upload mode
   const file = formData.get('file')
   if (!(file instanceof File)) {
     return NextResponse.json({ error: 'No file provided' }, { status: 400 })
@@ -36,10 +77,6 @@ export async function POST(req: NextRequest): Promise<NextResponse<AnalyzeRespon
     )
   }
 
-  const mode = (formData.get('mode') as ScanMode | null) ?? 'general'
-  const role_track = (formData.get('role_track') as string | null) || null
-
-  // Parse resume text server-side
   let resume_text: string
   try {
     const buffer = Buffer.from(await file.arrayBuffer())
@@ -51,7 +88,6 @@ export async function POST(req: NextRequest): Promise<NextResponse<AnalyzeRespon
 
   const supabase = createAdminClient()
 
-  // Look up the Supabase user ID from clerk_user_id
   const { data: dbUser, error: userError } = await supabase
     .from('users')
     .select('id')
@@ -66,7 +102,6 @@ export async function POST(req: NextRequest): Promise<NextResponse<AnalyzeRespon
   const ext = mimeType === 'application/pdf' ? 'pdf' : 'docx'
   const storagePath = `${user.id}/${scan_id}/resume.${ext}`
 
-  // Upload original file to Supabase Storage
   const fileBuffer = Buffer.from(await file.arrayBuffer())
   const { error: uploadError } = await supabase.storage
     .from('resumes')

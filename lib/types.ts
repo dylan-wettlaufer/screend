@@ -5,7 +5,7 @@ export interface ScanInsert {
   mode: ScanMode
   role_track?: string | null
   resume_text: string
-  resume_file_path: string
+  resume_file_path: string | null
 }
 
 export interface AnalyzeResponse {

@@ -14,10 +14,25 @@ const ACCEPTED_EXTENSIONS = '.pdf,.docx'
 export function ResumeUpload() {
   const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const [inputMode, setInputMode] = useState<'file' | 'text'>('file')
   const [dragOver, setDragOver] = useState(false)
   const [file, setFile] = useState<File | null>(null)
+  const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  function switchToText() {
+    setInputMode('text')
+    setFile(null)
+    setError(null)
+  }
+
+  function switchToFile() {
+    setInputMode('file')
+    setText('')
+    setError(null)
+  }
 
   function validateFile(f: File): string | null {
     if (!ACCEPTED_TYPES.includes(f.type)) {
@@ -59,17 +74,24 @@ export function ResumeUpload() {
 
   const onDragLeave = () => setDragOver(false)
 
+  const isSubmitDisabled = loading || (inputMode === 'file' ? !file : !text.trim())
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!file) return
+    if (isSubmitDisabled) return
 
     setLoading(true)
     setError(null)
 
     try {
       const formData = new FormData()
-      formData.append('file', file)
       formData.append('mode', 'general')
+
+      if (inputMode === 'file' && file) {
+        formData.append('file', file)
+      } else {
+        formData.append('resume_text', text)
+      }
 
       const res = await fetch('/api/analyze', {
         method: 'POST',
@@ -91,65 +113,99 @@ export function ResumeUpload() {
     }
   }
 
-  const fileLabel = file ? file.name : null
-
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => inputRef.current?.click()}
-        onKeyDown={(e) => e.key === 'Enter' && inputRef.current?.click()}
-        onDrop={onDrop}
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        className={[
-          'flex flex-col items-center justify-center gap-3 rounded-card border px-6 py-12 text-center transition-colors cursor-pointer select-none',
-          dragOver
-            ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)]'
-            : file
-            ? 'border-[var(--color-accent-dim)] bg-[var(--color-bg-raised)]'
-            : 'border-[var(--color-border)] bg-[var(--color-bg-raised)] hover:border-[var(--color-border-strong)]',
-        ].join(' ')}
-      >
-        <input
-          ref={inputRef}
-          type="file"
-          accept={ACCEPTED_EXTENSIONS}
-          className="hidden"
-          onChange={onInputChange}
-        />
-        <div className="flex h-10 w-10 items-center justify-center rounded-element bg-[var(--color-bg-hover)]">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            <path
-              d="M10 2L10 13M10 2L7 5M10 2L13 5"
-              stroke="var(--color-accent)"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+      {inputMode === 'file' ? (
+        <>
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => inputRef.current?.click()}
+            onKeyDown={(e) => e.key === 'Enter' && inputRef.current?.click()}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            className={[
+              'flex flex-col items-center justify-center gap-3 rounded-card border px-6 py-12 text-center transition-colors cursor-pointer select-none',
+              dragOver
+                ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)]'
+                : file
+                ? 'border-[var(--color-accent-dim)] bg-[var(--color-bg-raised)]'
+                : 'border-[var(--color-border)] bg-[var(--color-bg-raised)] hover:border-[var(--color-border-strong)]',
+            ].join(' ')}
+          >
+            <input
+              ref={inputRef}
+              type="file"
+              accept={ACCEPTED_EXTENSIONS}
+              className="hidden"
+              onChange={onInputChange}
             />
-            <path
-              d="M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2"
-              stroke="var(--color-text-secondary)"
-              strokeWidth="1.5"
-              strokeLinecap="round"
+            <div className="flex h-10 w-10 items-center justify-center rounded-element bg-[var(--color-bg-hover)]">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path
+                  d="M10 2L10 13M10 2L7 5M10 2L13 5"
+                  stroke="var(--color-accent)"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2"
+                  stroke="var(--color-text-secondary)"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
+            {file ? (
+              <p className="font-mono text-sm text-[var(--color-text-primary)]">{file.name}</p>
+            ) : (
+              <>
+                <p className="text-sm text-[var(--color-text-primary)]">
+                  Drop your resume here or{' '}
+                  <span className="text-[var(--color-accent)]">browse</span>
+                </p>
+                <p className="font-mono text-xs text-[var(--color-text-tertiary)]">
+                  PDF or DOCX · max 5 MB
+                </p>
+              </>
+            )}
+          </div>
+
+          <p className="text-xs text-[var(--color-text-tertiary)] text-center">
+            or{' '}
+            <button
+              type="button"
+              onClick={switchToText}
+              className="text-[var(--color-text-secondary)] underline underline-offset-2 hover:text-[var(--color-text-primary)] transition-colors"
+            >
+              paste text instead
+            </button>
+          </p>
+        </>
+      ) : (
+        <>
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-[var(--color-text-tertiary)] text-right">
+              <button
+                type="button"
+                onClick={switchToFile}
+                className="text-[var(--color-text-secondary)] underline underline-offset-2 hover:text-[var(--color-text-primary)] transition-colors"
+              >
+                upload a file instead
+              </button>
+            </p>
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Paste your resume here…"
+              rows={16}
+              className="w-full rounded-card border border-[var(--color-border)] bg-[var(--color-bg-raised)] px-4 py-3 font-mono text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] resize-none focus:outline-none focus:border-[var(--color-border-strong)] transition-colors"
             />
-          </svg>
-        </div>
-        {fileLabel ? (
-          <p className="font-mono text-sm text-[var(--color-text-primary)]">{fileLabel}</p>
-        ) : (
-          <>
-            <p className="text-sm text-[var(--color-text-primary)]">
-              Drop your resume here or{' '}
-              <span className="text-[var(--color-accent)]">browse</span>
-            </p>
-            <p className="font-mono text-xs text-[var(--color-text-tertiary)]">
-              PDF or DOCX · max 5 MB
-            </p>
-          </>
-        )}
-      </div>
+          </div>
+        </>
+      )}
 
       {error && (
         <p className="rounded-element bg-[#2a1515] px-4 py-2.5 font-mono text-sm text-[var(--color-danger)]">
@@ -159,8 +215,8 @@ export function ResumeUpload() {
 
       <button
         type="submit"
-        disabled={!file || loading}
-        className={`${!file ? 'cursor-not-allowed' : 'cursor-pointer'} rounded-element bg-[var(--color-accent)] px-5 py-2.5 text-sm font-medium text-[var(--color-bg-base)] transition-opacity disabled:opacity-40`}
+        disabled={isSubmitDisabled}
+        className="rounded-element bg-[var(--color-accent)] px-5 py-2.5 text-sm font-medium text-[var(--color-bg-base)] transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {loading ? 'Scanning…' : 'Scan resume'}
       </button>
