@@ -48,6 +48,29 @@ export interface AnalyzeErrorResponse {
   error: string
 }
 
+export const RewriteDiffItemSchema = z.object({
+  section: z.string(),
+  original_line: z.string(),
+  revised_line: z.string(),
+})
+
+export type RewriteDiffItem = z.infer<typeof RewriteDiffItemSchema>
+
+export const RewriteResultSchema = z.array(RewriteDiffItemSchema)
+
+export interface RewriteRequest {
+  scan_id: string
+  accepted_feedback_item_ids: string[]
+}
+
+export interface RewriteResponse {
+  diff: RewriteDiffItem[]
+}
+
+export interface RewriteErrorResponse {
+  error: string
+}
+
 export interface ScanRecord {
   id: string
   mode: ScanMode

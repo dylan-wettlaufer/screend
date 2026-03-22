@@ -2,24 +2,39 @@
 
 import { useState } from 'react'
 import { FeedbackItem } from '@/components/scan/FeedbackItem'
-import type { FeedbackItem as FeedbackItemType } from '@/lib/types'
+import { DiffView } from '@/components/scan/DiffView'
+import type {
+  FeedbackItem as FeedbackItemType,
+  RewriteDiffItem,
+  RewriteResponse,
+  RewriteErrorResponse,
+} from '@/lib/types'
 
 interface ScanResultTabsProps {
   feedback: FeedbackItemType[]
   keywordsMatched: string[]
   keywordsMissing: string[]
   isJobMatch: boolean
+  scanId: string
+  resumeText: string
 }
+
+type RewriteState = 'idle' | 'loading' | 'error' | 'done'
 
 export function ScanResultTabs({
   feedback,
   keywordsMatched,
   keywordsMissing,
   isJobMatch,
+  scanId,
 }: ScanResultTabsProps) {
   const [tab, setTab] = useState<'suggestions' | 'keywords'>('suggestions')
   const [accepted, setAccepted] = useState<Set<string>>(new Set())
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
+
+  const [rewriteState, setRewriteState] = useState<RewriteState>('idle')
+  const [rewriteError, setRewriteError] = useState<string | null>(null)
+  const [diff, setDiff] = useState<RewriteDiffItem[]>([])
 
   const tabs = [
     { id: 'suggestions' as const, label: 'Suggestions' },
@@ -31,13 +46,11 @@ export function ScanResultTabs({
   }
 
   function handleDismiss(id: string) {
-    // If currently accepted, un-accept first
     setAccepted((prev) => {
       const next = new Set(prev)
       next.delete(id)
       return next
     })
-    // Toggle dismiss (undo if already dismissed)
     setDismissed((prev) => {
       const next = new Set(prev)
       if (next.has(id)) {
@@ -54,8 +67,50 @@ export function ScanResultTabs({
     setAccepted(new Set(ids))
   }
 
+  async function handleGenerate() {
+    setRewriteState('loading')
+    setRewriteError(null)
+
+    try {
+      const res = await fetch('/api/rewrite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scan_id: scanId,
+          accepted_feedback_item_ids: Array.from(accepted),
+        }),
+      })
+
+      const data: RewriteResponse | RewriteErrorResponse = await res.json()
+
+      if (!res.ok) {
+        setRewriteError((data as RewriteErrorResponse).error ?? 'Something went wrong.')
+        setRewriteState('error')
+        return
+      }
+
+      setDiff((data as RewriteResponse).diff)
+      setRewriteState('done')
+    } catch {
+      setRewriteError('Network error. Please try again.')
+      setRewriteState('error')
+    }
+  }
+
+  function handleDownloadPdf(acceptedDiff: RewriteDiffItem[]) {
+    // TODO: implement PDF export
+    console.log('Download PDF with changes:', acceptedDiff)
+  }
+
+  function handleDownloadDocx(acceptedDiff: RewriteDiffItem[]) {
+    // TODO: implement DOCX export
+    console.log('Download DOCX with changes:', acceptedDiff)
+  }
+
   const acceptedCount = accepted.size
   const canGenerate = acceptedCount > 0
+  const isGenerating = rewriteState === 'loading'
+  const isDone = rewriteState === 'done'
 
   return (
     <>
@@ -89,9 +144,8 @@ export function ScanResultTabs({
             </button>
           ))}
 
-          {tab === 'suggestions' && feedback.length > 0 && (
+          {tab === 'suggestions' && feedback.length > 0 && !isDone && (
             <div className="ml-auto flex items-center gap-2">
-              {/* Item count pill */}
               <span
                 className="font-mono text-xs rounded-pill border px-2 py-0.5"
                 style={{
@@ -105,7 +159,6 @@ export function ScanResultTabs({
                   : `${feedback.length} items`}
               </span>
 
-              {/* Accept all button */}
               <button
                 type="button"
                 onClick={handleAcceptAll}
@@ -134,8 +187,14 @@ export function ScanResultTabs({
 
         {/* Suggestions tab */}
         {tab === 'suggestions' && (
-          <div className={`flex flex-col gap-3 ${canGenerate ? 'pb-24' : ''}`}>
-            {feedback.length === 0 ? (
+          <div className={`flex flex-col gap-3 ${canGenerate && !isDone ? 'pb-24' : ''}`}>
+            {isDone ? (
+              <DiffView
+                diff={diff}
+                onDownloadPdf={handleDownloadPdf}
+                onDownloadDocx={handleDownloadDocx}
+              />
+            ) : feedback.length === 0 ? (
               <div
                 className="rounded-card border px-5 py-8 text-center"
                 style={{ background: 'var(--color-bg-surface)', borderColor: 'var(--color-border)' }}
@@ -162,7 +221,6 @@ export function ScanResultTabs({
         {/* Keywords tab */}
         {tab === 'keywords' && (
           <div className="flex flex-col gap-5">
-            {/* Matched */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-2">
                 <p
@@ -205,7 +263,6 @@ export function ScanResultTabs({
               )}
             </div>
 
-            {/* Missing */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-2">
                 <p
@@ -251,8 +308,8 @@ export function ScanResultTabs({
         )}
       </div>
 
-      {/* Sticky bottom bar — only visible when at least one item is accepted */}
-      {canGenerate && (
+      {/* Sticky bottom bar */}
+      {canGenerate && !isDone && (
         <div
           className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 border-t"
           style={{
@@ -260,23 +317,28 @@ export function ScanResultTabs({
             borderColor: 'var(--color-border)',
           }}
         >
-          <p className="font-mono text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            <span style={{ color: 'var(--color-text-primary)' }}>{acceptedCount}</span>
-            {' '}suggestion{acceptedCount !== 1 ? 's' : ''} accepted
-          </p>
+          <div className="flex flex-col gap-0.5">
+            <p className="font-mono text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+              <span style={{ color: 'var(--color-text-primary)' }}>{acceptedCount}</span>
+              {' '}suggestion{acceptedCount !== 1 ? 's' : ''} accepted
+            </p>
+            {rewriteState === 'error' && rewriteError && (
+              <p className="font-mono text-xs" style={{ color: 'var(--color-danger)' }}>
+                {rewriteError}
+              </p>
+            )}
+          </div>
           <button
             type="button"
-            onClick={() => {
-              // TODO: wire to rewrite API
-              console.log('Generate resume with accepted IDs:', Array.from(accepted))
-            }}
-            className="rounded-element px-5 py-2 text-sm font-medium transition-opacity"
+            onClick={handleGenerate}
+            disabled={isGenerating}
+            className="rounded-element px-5 py-2 text-sm font-medium transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
             style={{
               background: 'var(--color-accent)',
               color: 'var(--color-bg-base)',
             }}
           >
-            Generate new resume
+            {isGenerating ? 'Generating…' : 'Generate new resume'}
           </button>
         </div>
       )}

@@ -1,5 +1,11 @@
 import { GoogleGenAI } from '@google/genai'
-import { ScanResultSchema, type ScanResult } from '@/lib/types'
+import {
+  ScanResultSchema,
+  RewriteResultSchema,
+  type ScanResult,
+  type RewriteDiffItem,
+  type FeedbackItem,
+} from '@/lib/types'
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! })
 
@@ -128,6 +134,50 @@ export async function analyzeResume(
     return await callGemini(userMessage, GENERAL_SCAN_SYSTEM_PROMPT)
   } catch {
     return await callGemini(userMessage, GENERAL_SCAN_SYSTEM_PROMPT)
+  }
+}
+
+const REWRITE_SYSTEM_PROMPT = `You are an expert resume editor. You will receive the original resume text and a list of accepted feedback items. Each feedback item contains a description of the change needed, the original_line to be changed, and the suggested_line that was proposed.
+
+Your task: rewrite ONLY the specific lines identified in the accepted feedback items. Do not change any other content. Preserve the overall tone and voice of the resume.
+
+Return ONLY a valid JSON array — no markdown, no prose, no code fences. Each element must be:
+{
+  "section": "<section name>",
+  "original_line": "<exact original line>",
+  "revised_line": "<your improved version implementing the feedback>"
+}
+
+The revised_line must implement the suggestion from the feedback item. If a suggested_line was provided in the feedback item, use it as a strong starting point but feel free to refine it to read naturally in context.`
+
+export async function rewriteResume(
+  resumeText: string,
+  acceptedItems: FeedbackItem[]
+): Promise<RewriteDiffItem[]> {
+  const userMessage = `--- ORIGINAL RESUME ---\n${resumeText}\n\n--- ACCEPTED CHANGES ---\n${JSON.stringify(acceptedItems)}`
+
+  async function attempt(): Promise<RewriteDiffItem[]> {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [{ role: 'user', parts: [{ text: userMessage }] }],
+      config: {
+        temperature: 0,
+        responseMimeType: 'application/json',
+        systemInstruction: REWRITE_SYSTEM_PROMPT,
+      },
+    })
+
+    const raw = response.text
+    if (!raw) throw new Error('Empty response from Gemini')
+
+    const parsed: unknown = JSON.parse(raw)
+    return RewriteResultSchema.parse(parsed)
+  }
+
+  try {
+    return await attempt()
+  } catch {
+    return await attempt()
   }
 }
 

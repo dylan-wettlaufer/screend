@@ -139,6 +139,8 @@ export default async function ScanResultPage({ params }: ScanResultPageProps) {
             keywordsMatched={keywordsMatched}
             keywordsMissing={keywordsMissing}
             isJobMatch={isJobMatch}
+            scanId={typedScan.id}
+            resumeText={typedScan.resume_text}
           />
 
         </div>
