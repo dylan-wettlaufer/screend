@@ -66,12 +66,21 @@ export default async function ScanResultPage({ params }: ScanResultPageProps) {
       : typedScan.jd_title
     : null
 
-  return (
-    <main className="min-h-screen px-4 pt-16 pb-20" style={{ background: 'var(--color-bg-base)' }}>
-      <div className="mx-auto max-w-5xl">
+  const resumeFilePath = typedScan.resume_file_path
+  const resumeIsPdf = resumeFilePath?.toLowerCase().endsWith('.pdf') ?? false
 
-        {/* Page heading */}
-        <div className="mb-8">
+  let resumeSignedUrl: string | null = null
+  if (resumeFilePath) {
+    const { data } = await supabase.storage
+      .from('resumes')
+      .createSignedUrl(resumeFilePath, 60 * 10)
+    resumeSignedUrl = data?.signedUrl ?? null
+  }
+
+  return (
+    <main className="h-screen px-6 pt-6 pb-6" style={{ background: 'var(--color-bg-base)' }}>
+      <div className="h-full flex flex-col gap-4">
+        <div>
           <p
             className="font-mono text-xs mb-1"
             style={{ color: 'var(--color-text-tertiary)' }}
@@ -100,49 +109,110 @@ export default async function ScanResultPage({ params }: ScanResultPageProps) {
           </h1>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-[340px_1fr]">
-
-          {/* Left panel — scores */}
-          <div className="flex flex-col gap-4">
-
-            <div
-              className="rounded-card border p-6 flex flex-col items-center"
-              style={{ background: 'var(--color-bg-surface)', borderColor: 'var(--color-border)' }}
-            >
-              <ScoreRing score={typedScan.overall_score} />
-            </div>
-
-            <div
-              className="rounded-card border p-5 flex flex-col gap-4"
-              style={{ background: 'var(--color-bg-surface)', borderColor: 'var(--color-border)' }}
-            >
-              <p
-                className="text-xs font-medium uppercase tracking-widest"
-                style={{ color: 'var(--color-text-tertiary)' }}
-              >
-                Breakdown
+        <div className="grid h-[calc(100%-4.5rem)] grid-cols-1 gap-4 xl:grid-cols-[1fr_1.1fr] xl:[grid-template-rows:minmax(0,1fr)]">
+          {/* Left panel — submitted resume */}
+          <section
+            className="hidden xl:flex rounded-card border bg-bg-surface p-4 min-h-0 h-full flex-col"
+            style={{ borderColor: 'var(--color-border)' }}
+          >
+            <div className="mb-3">
+              <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                Submitted resume
               </p>
-              {SUB_SCORES.map(({ key, label }) => (
-                <SubScoreBar
-                  key={key}
-                  label={label}
-                  score={typedScan[key] ?? 0}
+            </div>
+            <div
+              className="group relative flex-1 min-h-0 rounded-element border overflow-hidden"
+              style={{ borderColor: 'var(--color-border)' }}
+            >
+              {/* Hover overlay — only visible when hovering the resume panel */}
+              {resumeSignedUrl && (
+                <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-end px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                  style={{ background: 'linear-gradient(to bottom, rgba(24,24,27,0.85) 60%, transparent)' }}
+                >
+                  <a
+                    href={resumeSignedUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="pointer-events-auto font-mono text-xs underline underline-offset-2 transition-colors"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    Open file
+                  </a>
+                </div>
+              )}
+
+              {resumeSignedUrl && resumeIsPdf ? (
+                <iframe
+                  src={`${resumeSignedUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+                  title="Submitted resume PDF"
+                  className="w-full h-full block"
                 />
-              ))}
+              ) : resumeSignedUrl ? (
+                <div className="h-full flex items-center justify-center text-center px-4">
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                      Preview is not available for this file type.
+                    </p>
+                    <a
+                      href={resumeSignedUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-mono text-xs underline underline-offset-2"
+                      style={{ color: 'var(--color-accent)' }}
+                    >
+                      Open submitted file
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <pre
+                  className="text-sm leading-relaxed whitespace-pre-wrap break-words font-sans"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  {typedScan.resume_text}
+                </pre>
+              )}
+            </div>
+          </section>
+
+          {/* Right panel — scores + suggestions/keywords */}
+          <section className="min-h-0 h-full flex flex-col gap-4">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[220px_1fr]">
+              <div
+                className="rounded-card border p-4 flex items-center justify-center"
+                style={{ background: 'var(--color-bg-surface)', borderColor: 'var(--color-border)' }}
+              >
+                <ScoreRing score={typedScan.overall_score} />
+              </div>
+
+              <div
+                className="rounded-card border p-4 flex flex-col gap-3"
+                style={{ background: 'var(--color-bg-surface)', borderColor: 'var(--color-border)' }}
+              >
+                <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                  Score breakdown
+                </p>
+                {SUB_SCORES.map(({ key, label }) => (
+                  <SubScoreBar
+                    key={key}
+                    label={label}
+                    score={typedScan[key] ?? 0}
+                  />
+                ))}
+              </div>
             </div>
 
-          </div>
-
-          {/* Right panel — tabbed feedback + keywords */}
-          <ScanResultTabs
-            feedback={feedback}
-            keywordsMatched={keywordsMatched}
-            keywordsMissing={keywordsMissing}
-            isJobMatch={isJobMatch}
-            scanId={typedScan.id}
-            resumeText={typedScan.resume_text}
-          />
-
+            <div className="min-h-0 rounded-card border bg-bg-surface p-4 overflow-y-auto" style={{ borderColor: 'var(--color-border)' }}>
+              <ScanResultTabs
+                feedback={feedback}
+                keywordsMatched={keywordsMatched}
+                keywordsMissing={keywordsMissing}
+                isJobMatch={isJobMatch}
+                scanId={typedScan.id}
+                resumeText={typedScan.resume_text}
+              />
+            </div>
+          </section>
         </div>
       </div>
     </main>
