@@ -40,8 +40,7 @@ export function FeedbackItem({ item, isAccepted, isDismissed, isActive, onAccept
         className="rounded-card border px-4 py-3 flex items-center gap-2.5"
         style={{
           background: 'var(--color-bg-surface)',
-          borderColor: 'var(--color-border)',
-          borderLeft: isActive ? '2px solid var(--color-accent)' : undefined,
+          borderColor: isActive ? 'var(--color-accent)' : 'var(--color-border)',
         }}
       >
         <div className="shrink-0 h-2 w-2 rounded-full opacity-30" style={{ background: dot }} />
@@ -72,15 +71,14 @@ export function FeedbackItem({ item, isAccepted, isDismissed, isActive, onAccept
       onClick={onSelect}
       onKeyDown={(e) => e.key === 'Enter' && onSelect()}
       className="rounded-card border p-4 flex flex-col gap-3 transition-colors cursor-pointer outline-none"
-      style={{
-        background: 'var(--color-bg-surface)',
-        borderColor: isActive
-          ? 'var(--color-accent)'
-          : isAccepted
-          ? 'var(--color-border-strong)'
-          : 'var(--color-border)',
-        borderLeft: isActive ? '2px solid var(--color-accent)' : undefined,
-      }}
+        style={{
+          background: 'var(--color-bg-surface)',
+          borderColor: isActive
+            ? 'var(--color-accent)'
+            : isAccepted
+            ? 'var(--color-border-strong)'
+            : 'var(--color-border)',
+        }}
     >
       {/* Header row */}
       <div className="flex items-start gap-2.5">
