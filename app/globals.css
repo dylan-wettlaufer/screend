@@ -6,17 +6,21 @@
 
 :root {
   /* ── Screend palette tokens ──────────────────────────────── */
-  --bg-base: #0a0a0b;
-  --bg-surface: #111113;
-  --bg-raised: #18181b;
+  --bg-base: #090909;
+  --bg-surface: #101010;
+  --bg-raised: ##1C1C1C;
   --bg-hover: #212126;
+
   --border-screend: #27272a;
   --border-strong: #3f3f46;
-  --accent-screend: #3b82f6;
+
+  --accent-screend: #67aaf3;
   --accent-subtle: #17171a;
+
   --text-primary: #fafafa;
   --text-secondary: #a1a1aa;
   --text-tertiary: #71717a;
+
   --danger: #f87171;
   --warning: #fb923c;
   --success: #3b82f6;
@@ -28,7 +32,7 @@
   --card-foreground: #fafafa;
   --popover: #111113;
   --popover-foreground: #fafafa;
-  --primary: #3b82f6;
+  --primary: #67aaf3;
   --primary-foreground: #ffffff;
   --secondary: #18181b;
   --secondary-foreground: #fafafa;

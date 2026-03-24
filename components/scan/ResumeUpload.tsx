@@ -114,10 +114,14 @@ function UploadZone({
   )
 }
 
-export function ResumeUpload() {
+interface ResumeUploadProps {
+  initialMode?: ScanMode
+}
+
+export function ResumeUpload({ initialMode = 'general' }: ResumeUploadProps) {
   const router = useRouter()
 
-  const [mode, setMode] = useState<ScanMode>('general')
+  const [mode, setMode] = useState<ScanMode>(initialMode)
 
   // Resume input
   const [resumeInputMode, setResumeInputMode] = useState<'file' | 'text'>('file')
