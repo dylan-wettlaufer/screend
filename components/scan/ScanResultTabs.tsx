@@ -17,6 +17,8 @@ interface ScanResultTabsProps {
   isJobMatch: boolean
   scanId: string
   resumeText: string
+  activeFeedbackId: string | null
+  onFeedbackSelect: (id: string | null) => void
 }
 
 type RewriteState = 'idle' | 'loading' | 'error' | 'done'
@@ -27,6 +29,8 @@ export function ScanResultTabs({
   keywordsMissing,
   isJobMatch,
   scanId,
+  activeFeedbackId,
+  onFeedbackSelect,
 }: ScanResultTabsProps) {
   const [tab, setTab] = useState<'suggestions' | 'keywords'>('suggestions')
   const [accepted, setAccepted] = useState<Set<string>>(new Set())
@@ -210,8 +214,10 @@ export function ScanResultTabs({
                   item={item}
                   isAccepted={accepted.has(item.id)}
                   isDismissed={dismissed.has(item.id)}
+                  isActive={activeFeedbackId === item.id}
                   onAccept={() => handleAccept(item.id)}
                   onDismiss={() => handleDismiss(item.id)}
+                  onSelect={() => onFeedbackSelect(item.id)}
                 />
               ))
             )}

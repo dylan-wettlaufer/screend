@@ -7,8 +7,10 @@ interface FeedbackItemProps {
   item: FeedbackItemType
   isAccepted: boolean
   isDismissed: boolean
+  isActive: boolean
   onAccept: () => void
   onDismiss: () => void
+  onSelect: () => void
 }
 
 const severityStyles: Record<FeedbackItemType['severity'], { dot: string; label: string }> = {
@@ -19,7 +21,7 @@ const severityStyles: Record<FeedbackItemType['severity'], { dot: string; label:
 
 const DESCRIPTION_THRESHOLD = 120
 
-export function FeedbackItem({ item, isAccepted, isDismissed, onAccept, onDismiss }: FeedbackItemProps) {
+export function FeedbackItem({ item, isAccepted, isDismissed, isActive, onAccept, onDismiss, onSelect }: FeedbackItemProps) {
   const { dot, label: severityLabel } = severityStyles[item.severity]
   const hasDiff = !!(item.original_line && item.suggested_line)
   const isLong = item.description.length > DESCRIPTION_THRESHOLD
@@ -39,6 +41,7 @@ export function FeedbackItem({ item, isAccepted, isDismissed, onAccept, onDismis
         style={{
           background: 'var(--color-bg-surface)',
           borderColor: 'var(--color-border)',
+          borderLeft: isActive ? '2px solid var(--color-accent)' : undefined,
         }}
       >
         <div className="shrink-0 h-2 w-2 rounded-full opacity-30" style={{ background: dot }} />
@@ -50,7 +53,7 @@ export function FeedbackItem({ item, isAccepted, isDismissed, onAccept, onDismis
         </p>
         <button
           type="button"
-          onClick={onDismiss}
+          onClick={(e) => { e.stopPropagation(); onDismiss() }}
           className="shrink-0 font-mono text-xs transition-colors"
           style={{ color: 'var(--color-text-tertiary)' }}
           onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-text-secondary)')}
@@ -64,10 +67,19 @@ export function FeedbackItem({ item, isAccepted, isDismissed, onAccept, onDismis
 
   return (
     <div
-      className="rounded-card border p-4 flex flex-col gap-3 transition-colors"
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(e) => e.key === 'Enter' && onSelect()}
+      className="rounded-card border p-4 flex flex-col gap-3 transition-colors cursor-pointer outline-none"
       style={{
-        background: isAccepted ? 'var(--color-accent-muted)' : 'var(--color-bg-surface)',
-        borderColor: isAccepted ? 'var(--color-accent-dim)' : 'var(--color-border)',
+        background: 'var(--color-bg-surface)',
+        borderColor: isActive
+          ? 'var(--color-accent)'
+          : isAccepted
+          ? 'var(--color-border-strong)'
+          : 'var(--color-border)',
+        borderLeft: isActive ? '2px solid var(--color-accent)' : undefined,
       }}
     >
       {/* Header row */}
@@ -114,7 +126,7 @@ export function FeedbackItem({ item, isAccepted, isDismissed, onAccept, onDismis
         {isLong && (
           <button
             type="button"
-            onClick={() => setExpanded((v) => !v)}
+            onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v) }}
             className="self-start font-mono text-xs transition-colors"
             style={{ color: 'var(--color-text-tertiary)' }}
             onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-text-secondary)')}
@@ -172,7 +184,7 @@ export function FeedbackItem({ item, isAccepted, isDismissed, onAccept, onDismis
           <>
             <button
               type="button"
-              onClick={onAccept}
+              onClick={(e) => { e.stopPropagation(); onAccept() }}
               className="rounded-element border px-3 py-1 font-mono text-xs transition-colors"
               style={{
                 borderColor: 'var(--color-accent-dim)',
@@ -190,7 +202,7 @@ export function FeedbackItem({ item, isAccepted, isDismissed, onAccept, onDismis
             </button>
             <button
               type="button"
-              onClick={onDismiss}
+              onClick={(e) => { e.stopPropagation(); onDismiss() }}
               className="rounded-element border px-3 py-1 font-mono text-xs transition-colors"
               style={{
                 borderColor: 'var(--color-border)',
