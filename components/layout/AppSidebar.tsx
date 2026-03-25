@@ -67,7 +67,6 @@ export function AppSidebar() {
                 },
               },
             }}
-            afterSignOutUrl="/"
           />
           <span className="text-text-secondary text-sm">Account</span>
         </div>

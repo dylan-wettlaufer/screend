@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  nextjs-app:
+    build: .              # ← dot means current directory
+    ports:
+      - "3000:3000"
+    environment:
+      - LATEX_SERVICE_URL=http://latex-service:3001
+    depends_on:
+      - latex-service
+    volumes:
+      - .:/app            # ← dot here too
+      - /app/node_modules
+      - /app/.next
+
+  latex-service:
+    build: ./latex-service
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./latex-service:/app
+      - /app/node_modules
