@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { FeedbackItem } from '@/components/scan/FeedbackItem'
 import { DiffView } from '@/components/scan/DiffView'
+import { applyRewriteDiff } from '@/lib/applyRewriteDiff'
 import type {
   FeedbackItem as FeedbackItemType,
   RewriteDiffItem,
@@ -29,6 +30,7 @@ export function ScanResultTabs({
   keywordsMissing,
   isJobMatch,
   scanId,
+  resumeText,
   activeFeedbackId,
   onFeedbackSelect,
 }: ScanResultTabsProps) {
@@ -102,8 +104,12 @@ export function ScanResultTabs({
   }
 
   function handleDownloadPdf(acceptedDiff: RewriteDiffItem[]) {
-    // TODO: implement PDF export
-    console.log('Download PDF with changes:', acceptedDiff)
+    const { text, skipped } = applyRewriteDiff(resumeText, acceptedDiff)
+    if (skipped.length > 0) {
+      console.warn('applyRewriteDiff: the following lines were not matched in the resume:', skipped)
+    }
+    // TODO: pass `text` into structured JSON → LaTeX → Tectonic pipeline
+    console.log('Merged resume text:', text)
   }
 
   function handleDownloadDocx(acceptedDiff: RewriteDiffItem[]) {
