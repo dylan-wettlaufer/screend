@@ -6,6 +6,7 @@ interface SubScoreBarProps {
   label: string
   score: number
   max?: number
+  compact?: boolean
 }
 
 function getColor(score: number, max: number): string {
@@ -15,7 +16,7 @@ function getColor(score: number, max: number): string {
   return '#E24B4A'
 }
 
-export function SubScoreBar({ label, score, max = 20 }: SubScoreBarProps) {
+export function SubScoreBar({ label, score, max = 20, compact = false }: SubScoreBarProps) {
   const [animated, setAnimated] = useState(false)
 
   useEffect(() => {
@@ -28,16 +29,16 @@ export function SubScoreBar({ label, score, max = 20 }: SubScoreBarProps) {
   const color = getColor(clampedScore, max)
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between">
+    <div className={`flex flex-col ${compact ? 'gap-0.5' : 'gap-1.5'}`}>
+      <div className="flex items-center justify-between gap-2">
         <span
-          className="text-xs"
+          className={compact ? 'text-[11px] leading-tight' : 'text-xs'}
           style={{ color: 'var(--color-text-secondary)' }}
         >
           {label}
         </span>
         <span
-          className="font-mono text-xs"
+          className={`font-mono ${compact ? 'text-[11px]' : 'text-xs'}`}
           style={{ color: 'var(--color-text-primary)' }}
         >
           {clampedScore}
@@ -45,7 +46,7 @@ export function SubScoreBar({ label, score, max = 20 }: SubScoreBarProps) {
         </span>
       </div>
       <div
-        className="h-1.5 w-full rounded-pill overflow-hidden"
+        className={`${compact ? 'h-1' : 'h-1.5'} w-full rounded-pill overflow-hidden`}
         style={{ background: 'var(--color-bg-raised)' }}
       >
         <div

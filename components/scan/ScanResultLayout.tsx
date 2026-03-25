@@ -127,7 +127,7 @@ export function ScanResultLayout({
         className={[
           'min-h-0 flex-1',
           isSplit
-            ? 'grid gap-4 xl:grid-cols-[1fr_1.1fr] xl:[grid-template-rows:minmax(0,1fr)]'
+            ? 'grid gap-4 xl:grid-cols-[minmax(0,0.78fr)_minmax(0,1.28fr)] xl:[grid-template-rows:minmax(0,1fr)]'
             : 'flex gap-4',
         ].join(' ')}
       >
@@ -160,43 +160,43 @@ export function ScanResultLayout({
         {showRight && (
           <section
             className={[
-              'min-h-0 flex flex-col gap-4',
+              'min-h-0 flex flex-col gap-3',
               isSplit ? 'h-full' : 'flex-1 h-full',
             ].join(' ')}
           >
-            {/* Score cards */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[220px_1fr] shrink-0">
+            {/* Score cards — compact row so suggestions panel gets more vertical space */}
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,132px)_1fr] shrink-0 lg:items-stretch">
               <div
-                className="rounded-card border p-4 flex items-center justify-center"
+                className="rounded-card border p-2.5 flex items-center justify-center"
                 style={{
                   background: 'var(--color-bg-surface)',
                   borderColor: 'var(--color-border)',
                 }}
               >
-                <ScoreRing score={scan.overall_score} />
+                <ScoreRing score={scan.overall_score} compact />
               </div>
               <div
-                className="rounded-card border p-4 flex flex-col gap-3"
+                className="rounded-card border px-3 py-2.5 flex flex-col gap-2 justify-center"
                 style={{
                   background: 'var(--color-bg-surface)',
                   borderColor: 'var(--color-border)',
                 }}
               >
                 <p
-                  className="text-sm font-medium"
+                  className="text-xs font-medium"
                   style={{ color: 'var(--color-text-primary)' }}
                 >
                   Score breakdown
                 </p>
                 {SUB_SCORES.map(({ key, label }) => (
-                  <SubScoreBar key={key} label={label} score={scan[key] ?? 0} />
+                  <SubScoreBar key={key} label={label} score={scan[key] ?? 0} compact />
                 ))}
               </div>
             </div>
 
-            {/* Tabs panel */}
+            {/* Tabs panel — tab bar fixed, list scrolls */}
             <div
-              className="min-h-0 flex-1 rounded-card border bg-bg-surface p-4 overflow-y-auto"
+              className="min-h-0 flex-1 flex flex-col rounded-card border bg-bg-surface overflow-hidden"
               style={{ borderColor: 'var(--color-border)' }}
             >
               <ScanResultTabs

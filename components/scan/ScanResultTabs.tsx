@@ -118,11 +118,14 @@ export function ScanResultTabs({
 
   return (
     <>
-      <div className="flex flex-col gap-3">
-        {/* Tab bar */}
+      <div className="flex flex-col min-h-0 flex-1">
+        {/* Tab bar — stays visible; only content below scrolls */}
         <div
-          className="flex items-center gap-1 border-b"
-          style={{ borderColor: 'var(--color-border)' }}
+          className="shrink-0 flex items-center gap-1 border-b px-4 pt-4"
+          style={{
+            borderColor: 'var(--color-border)',
+            background: 'var(--color-bg-surface)',
+          }}
         >
           {tabs.map((t) => (
             <button
@@ -189,6 +192,7 @@ export function ScanResultTabs({
           )}
         </div>
 
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 pt-3">
         {/* Suggestions tab */}
         {tab === 'suggestions' && (
           <div className={`flex flex-col gap-3 ${canGenerate && !isDone ? 'pb-24' : ''}`}>
@@ -312,6 +316,7 @@ export function ScanResultTabs({
             </div>
           </div>
         )}
+        </div>
       </div>
 
       {/* Sticky bottom bar */}

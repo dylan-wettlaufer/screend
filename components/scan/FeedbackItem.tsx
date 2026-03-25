@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import type { FeedbackItem as FeedbackItemType } from '@/lib/types'
 
 interface FeedbackItemProps {
@@ -19,19 +18,9 @@ const severityStyles: Record<FeedbackItemType['severity'], { dot: string; label:
   low: { dot: 'var(--color-success)', label: 'Low' },
 }
 
-const DESCRIPTION_THRESHOLD = 120
-
 export function FeedbackItem({ item, isAccepted, isDismissed, isActive, onAccept, onDismiss, onSelect }: FeedbackItemProps) {
   const { dot, label: severityLabel } = severityStyles[item.severity]
   const hasDiff = !!(item.original_line && item.suggested_line)
-  const isLong = item.description.length > DESCRIPTION_THRESHOLD
-
-  const [expanded, setExpanded] = useState(false)
-
-  const visibleDescription =
-    isLong && !expanded
-      ? item.description.slice(0, DESCRIPTION_THRESHOLD).trimEnd() + '…'
-      : item.description
 
   // Dismissed state — collapsed single row
   if (isDismissed) {
@@ -112,27 +101,13 @@ export function FeedbackItem({ item, isAccepted, isDismissed, isActive, onAccept
         </div>
       </div>
 
-      {/* Description + read more */}
       <div className="flex flex-col gap-1.5">
         <p
           className="text-sm leading-relaxed"
           style={{ color: 'var(--color-text-secondary)' }}
         >
-          {visibleDescription}
+          {item.description}
         </p>
-
-        {isLong && (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v) }}
-            className="self-start font-mono text-xs transition-colors"
-            style={{ color: 'var(--color-text-tertiary)' }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-text-secondary)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-tertiary)')}
-          >
-            {expanded ? 'show less' : 'read more'}
-          </button>
-        )}
       </div>
 
       {/* Before / after mini-diff — always visible */}

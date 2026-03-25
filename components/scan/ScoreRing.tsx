@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 
 interface ScoreRingProps {
   score: number
+  /** Smaller ring + typography for dense layouts (e.g. scan result header) */
+  compact?: boolean
 }
 
 function getColor(score: number): string {
@@ -19,10 +21,10 @@ function getVerdict(score: number): string {
   return 'Needs major work'
 }
 
-const RADIUS = 54
-const CIRCUMFERENCE = 2 * Math.PI * RADIUS
+const DEFAULT_RADIUS = 54
+const COMPACT_RADIUS = 38
 
-export function ScoreRing({ score }: ScoreRingProps) {
+export function ScoreRing({ score, compact = false }: ScoreRingProps) {
   const [animated, setAnimated] = useState(false)
 
   useEffect(() => {
@@ -30,64 +32,73 @@ export function ScoreRing({ score }: ScoreRingProps) {
     return () => cancelAnimationFrame(t)
   }, [])
 
+  const radius = compact ? COMPACT_RADIUS : DEFAULT_RADIUS
+  const circumference = 2 * Math.PI * radius
+  const strokeW = compact ? 7 : 10
+  const size = compact ? 100 : 140
+  const c = size / 2
+
   const clampedScore = Math.max(0, Math.min(100, score))
   const offset = animated
-    ? CIRCUMFERENCE - (clampedScore / 100) * CIRCUMFERENCE
-    : CIRCUMFERENCE
+    ? circumference - (clampedScore / 100) * circumference
+    : circumference
 
   const color = getColor(clampedScore)
   const verdict = getVerdict(clampedScore)
 
   return (
-    <div className="flex flex-col items-center gap-3">
-      <div className="relative flex items-center justify-center" style={{ width: 140, height: 140 }}>
+    <div className={`flex flex-col items-center ${compact ? 'gap-1' : 'gap-3'}`}>
+      <div
+        className="relative flex items-center justify-center"
+        style={{ width: size, height: size }}
+      >
         <svg
-          width="140"
-          height="140"
-          viewBox="0 0 140 140"
+          width={size}
+          height={size}
+          viewBox={`0 0 ${size} ${size}`}
           aria-label={`Overall score: ${clampedScore} out of 100`}
           role="img"
         >
-          {/* Track */}
           <circle
-            cx="70"
-            cy="70"
-            r={RADIUS}
+            cx={c}
+            cy={c}
+            r={radius}
             fill="none"
             stroke="var(--color-bg-raised)"
-            strokeWidth="10"
+            strokeWidth={strokeW}
           />
-          {/* Progress arc */}
           <circle
-            cx="70"
-            cy="70"
-            r={RADIUS}
+            cx={c}
+            cy={c}
+            r={radius}
             fill="none"
             stroke={color}
-            strokeWidth="10"
+            strokeWidth={strokeW}
             strokeLinecap="round"
-            strokeDasharray={CIRCUMFERENCE}
+            strokeDasharray={circumference}
             strokeDashoffset={offset}
-            transform="rotate(-90 70 70)"
+            transform={`rotate(-90 ${c} ${c})`}
             style={{ transition: 'stroke-dashoffset 0.9s cubic-bezier(0.4,0,0.2,1)' }}
           />
         </svg>
-        {/* Score label centered inside ring */}
         <div className="absolute flex flex-col items-center leading-none">
           <span
-            className="font-mono text-3xl font-medium"
+            className={`font-mono font-medium ${compact ? 'text-xl' : 'text-3xl'}`}
             style={{ color }}
           >
             {clampedScore}
           </span>
-          <span className="font-mono text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
+          <span
+            className={`font-mono ${compact ? 'text-[10px]' : 'text-xs'}`}
+            style={{ color: 'var(--color-text-tertiary)' }}
+          >
             / 100
           </span>
         </div>
       </div>
 
       <span
-        className="font-mono text-xs tracking-wide"
+        className={`font-mono tracking-wide ${compact ? 'text-[10px] leading-tight text-center px-1' : 'text-xs'}`}
         style={{ color: 'var(--color-text-secondary)' }}
       >
         {verdict}
