@@ -2,9 +2,11 @@ import { GoogleGenAI } from '@google/genai'
 import {
   ScanResultSchema,
   RewriteResultSchema,
+  StructuredResumeSchema,
   type ScanResult,
   type RewriteDiffItem,
   type FeedbackItem,
+  type StructuredResume,
 } from '@/lib/types'
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! })
@@ -193,5 +195,61 @@ export async function analyzeResumeWithJD(
     return await callGemini(userMessage, JOB_MATCH_SYSTEM_PROMPT)
   } catch {
     return await callGemini(userMessage, JOB_MATCH_SYSTEM_PROMPT)
+  }
+}
+
+const STRUCTURE_RESUME_SYSTEM_PROMPT = `You are a resume parser. Extract structured data from the resume text below and return ONLY a valid JSON object — no markdown, no prose, no code fences.
+
+All string fields must be present. If a field is not found in the resume, return an empty string "". Bullet arrays must contain individual achievement strings, each without a leading dash or bullet character.
+
+Date format: use the exact text from the resume (e.g. "May 2023", "Jun. 2024 – Present"). Do not reformat or infer dates.
+
+Return a JSON object with EXACTLY this shape:
+{
+  "name": "<full name>",
+  "phone": "<phone number>",
+  "email": "<email address>",
+  "linkedin": "<linkedin username or URL>",
+  "github": "<github username or URL>",
+  "education": [
+    { "school": "", "degree": "", "location": "", "start": "", "end": "" }
+  ],
+  "experience": [
+    { "title": "", "company": "", "location": "", "start": "", "end": "", "bullets": [""] }
+  ],
+  "projects": [
+    { "name": "", "technologies": "", "start": "", "end": "", "bullets": [""] }
+  ],
+  "skills": {
+    "languages": "<comma-separated list>",
+    "frameworks": "<comma-separated list>",
+    "developer_tools": "<comma-separated list>",
+    "libraries": "<comma-separated list>"
+  }
+}`
+
+export async function structureResume(mergedText: string): Promise<StructuredResume> {
+  async function attempt(): Promise<StructuredResume> {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [{ role: 'user', parts: [{ text: mergedText }] }],
+      config: {
+        temperature: 0,
+        responseMimeType: 'application/json',
+        systemInstruction: STRUCTURE_RESUME_SYSTEM_PROMPT,
+      },
+    })
+
+    const raw = response.text
+    if (!raw) throw new Error('Empty response from Gemini')
+
+    const parsed: unknown = JSON.parse(raw)
+    return StructuredResumeSchema.parse(parsed)
+  }
+
+  try {
+    return await attempt()
+  } catch {
+    return await attempt()
   }
 }

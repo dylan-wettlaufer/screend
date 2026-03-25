@@ -71,6 +71,50 @@ export interface RewriteErrorResponse {
   error: string
 }
 
+export const StructuredResumeSchema = z.object({
+  name: z.string(),
+  phone: z.string(),
+  email: z.string(),
+  linkedin: z.string(),
+  github: z.string(),
+  education: z.array(
+    z.object({
+      school: z.string(),
+      degree: z.string(),
+      location: z.string(),
+      start: z.string(),
+      end: z.string(),
+    }),
+  ),
+  experience: z.array(
+    z.object({
+      title: z.string(),
+      company: z.string(),
+      location: z.string(),
+      start: z.string(),
+      end: z.string(),
+      bullets: z.array(z.string()),
+    }),
+  ),
+  projects: z.array(
+    z.object({
+      name: z.string(),
+      technologies: z.string(),
+      start: z.string(),
+      end: z.string(),
+      bullets: z.array(z.string()),
+    }),
+  ),
+  skills: z.object({
+    languages: z.string(),
+    frameworks: z.string(),
+    developer_tools: z.string(),
+    libraries: z.string(),
+  }),
+})
+
+export type StructuredResume = z.infer<typeof StructuredResumeSchema>
+
 export interface ScanRecord {
   id: string
   mode: ScanMode
