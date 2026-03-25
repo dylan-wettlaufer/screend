@@ -72,7 +72,6 @@ export function ResumeAnnotationPanel({
 
   return (
     <>
-      {/* Panel header */}
       <div
         className="flex items-center justify-between px-4 pt-4 pb-3 shrink-0"
         style={{ borderBottom: '0.5px solid var(--color-border)' }}
@@ -102,11 +101,7 @@ export function ResumeAnnotationPanel({
       {/* Panel body */}
       <div className="flex-1 min-h-0 overflow-hidden">
         {isPdfMode ? (
-          <PdfAnnotationViewer
-            url={resumeSignedUrl!}
-            feedback={feedback}
-            activeFeedbackId={activeFeedbackId}
-          />
+          <PdfAnnotationViewer url={resumeSignedUrl!} />
         ) : (
           <TextAnnotationView
             resumeText={resumeText}
