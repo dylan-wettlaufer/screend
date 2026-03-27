@@ -51,7 +51,13 @@ export async function POST(req: NextRequest): Promise<Response> {
     return NextResponse.json({ error: 'Scan not found' }, { status: 404 })
   }
 
-  const { text: mergedText } = applyRewriteDiff(scan.resume_text as string, diffParsed.data)
+  const { text: mergedText, skipped: mergeSkipped } = applyRewriteDiff(
+    scan.resume_text as string,
+    diffParsed.data,
+  )
+  if (mergeSkipped.length > 0) {
+    console.warn('[export/docx] applyRewriteDiff skipped (no match in resume_text):', mergeSkipped)
+  }
 
   let structured
   try {

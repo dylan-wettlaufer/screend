@@ -5,55 +5,86 @@ export interface ApplyRewriteDiffResult {
   skipped: string[]
 }
 
-/**
- * 
- * ApplyRewriteDiff function: It takes the original resume as a single string, 
- * finds each original_line from the diff inside that string, 
- * and swaps it out for the corresponding revised_line — leaving every other line completely untouched. 
- * The result is a new string of the full resume with only those specific lines replaced.
+/** Replace the first occurrence of `search` with `replacement`, or null if not found. */
+function replaceFirstOccurrence(
+  text: string,
+  search: string,
+  replacement: string,
+): string | null {
+  const i = text.indexOf(search)
+  if (i === -1) return null
+  return text.slice(0, i) + replacement + text.slice(i + search.length)
+}
 
- * Merges a set of accepted diff items into the original resume plain text.
+const BULLET_PREFIXES = ['● ', '• ', '- ', '– ', '●', '•'] as const
+
+/**
+ * Merges accepted diff items into the original resume plain text.
  *
- * Algorithm:
- * - Builds a Map<trimmedOriginal, revisedLine> from `diff` (first occurrence wins
- *   when the same original_line appears more than once in the diff).
- * - Walks resume lines once; replaces the first line whose trimmed value matches
- *   a map key, then removes that key so a second identical line is left as-is.
- * - Unmatched diff items are collected in `skipped` for the caller to log/warn.
+ * Phase 1 — Line-based (pasted / multi-line resumes): for each diff item in order,
+ * replace the first unused line whose trim() equals original_line.trim().
+ *
+ * Phase 2 — Substring fallback (PDF-style inline bullets, few newlines): for any
+ * item not applied in phase 1, replace the first occurrence of original_line; if
+ * missing, try common bullet prefixes before original_line. First occurrence only
+ * per item.
  */
 export function applyRewriteDiff(
   resumeText: string,
   diff: RewriteDiffItem[],
 ): ApplyRewriteDiffResult {
-  // Build lookup map — first occurrence of each original_line wins.
-  const replacements = new Map<string, string>()
-  for (const item of diff) {
-    const key = item.original_line.trim()
-    if (!replacements.has(key)) {
-      replacements.set(key, item.revised_line)
-    }
-  }
-
-  // Track which keys were actually matched during the walk.
-  const matched = new Set<string>()
-
   const lines = resumeText.split('\n')
-  const result = lines.map((line) => {
-    const trimmed = line.trim()
-    if (replacements.has(trimmed) && !matched.has(trimmed)) {
-      matched.add(trimmed)
-      return replacements.get(trimmed)!
-    }
-    return line
-  })
+  const consumedLineIdx = new Set<number>()
+  const phase1Done = new Set<number>()
 
-  // Any key that was never matched goes into skipped.
-  const skipped: string[] = []
-  for (const key of replacements.keys()) {
-    if (!matched.has(key)) {
-      skipped.push(key)
+  for (let d = 0; d < diff.length; d++) {
+    const item = diff[d]
+    const key = item.original_line.trim()
+    if (!key) continue
+
+    for (let i = 0; i < lines.length; i++) {
+      if (consumedLineIdx.has(i)) continue
+      if (lines[i].trim() === key) {
+        lines[i] = item.revised_line
+        consumedLineIdx.add(i)
+        phase1Done.add(d)
+        break
+      }
     }
   }
 
-  return { text: result.join('\n'), skipped }
+  let text = lines.join('\n')
+  const skipped: string[] = []
+
+  for (let d = 0; d < diff.length; d++) {
+    if (phase1Done.has(d)) continue
+
+    const item = diff[d]
+    const original = item.original_line.trim()
+    if (!original) continue
+
+    let next = replaceFirstOccurrence(text, original, item.revised_line)
+    if (next !== null) {
+      text = next
+      continue
+    }
+
+    let applied = false
+    for (const prefix of BULLET_PREFIXES) {
+      const search = `${prefix}${original}`
+      const replacement = `${prefix}${item.revised_line}`
+      next = replaceFirstOccurrence(text, search, replacement)
+      if (next !== null) {
+        text = next
+        applied = true
+        break
+      }
+    }
+
+    if (!applied) {
+      skipped.push(original)
+    }
+  }
+
+  return { text, skipped }
 }
