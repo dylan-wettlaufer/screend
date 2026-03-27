@@ -84,6 +84,8 @@ export const StructuredResumeSchema = z.object({
       location: z.string(),
       start: z.string(),
       end: z.string(),
+      honors: z.string(),
+      coursework: z.string(),
     }),
   ),
   experience: z.array(
@@ -106,10 +108,11 @@ export const StructuredResumeSchema = z.object({
     }),
   ),
   skills: z.object({
-    languages: z.string(),
-    frameworks: z.string(),
-    developer_tools: z.string(),
-    libraries: z.string(),
+    // Using .default("") prevents crashes if the AI misses a category
+    languages: z.string().default(""),
+    frameworks: z.string().default(""),
+    developer_tools: z.string().default(""),
+    libraries: z.string().default(""),
   }),
 })
 

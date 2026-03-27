@@ -212,13 +212,21 @@ Return a JSON object with EXACTLY this shape:
   "linkedin": "<linkedin username or URL>",
   "github": "<github username or URL>",
   "education": [
-    { "school": "", "degree": "", "location": "", "start": "", "end": "" }
+    { 
+      "school": "", 
+      "degree": "", 
+      "location": "", 
+      "start": "", 
+      "end": "",
+      "honors": "<Academic honors, awards, GPA, Dean's list — exactly as written in the resume. Empty string if none.>",
+      "coursework": "<Relevant course names only, comma-separated. Do not include honors or awards here. Empty string if none.>"
+    }
   ],
   "experience": [
     { "title": "", "company": "", "location": "", "start": "", "end": "", "bullets": [""] }
   ],
   "projects": [
-    { "name": "", "technologies": "", "start": "", "end": "", "bullets": [""] }
+    { "name": "", "technologies": "<comma-separated list of specific, concrete technology names only. Exclude generic or vague terms such as 'AI', 'FOAF', 'Named Entity Recognition', 'REST APIs', or any other category labels — include only specific languages, frameworks, libraries, and named tools.>", "start": "", "end": "", "bullets": [""] }
   ],
   "skills": {
     "languages": "<comma-separated list>",
