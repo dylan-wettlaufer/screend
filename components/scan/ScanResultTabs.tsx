@@ -43,6 +43,9 @@ export function ScanResultTabs({
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false)
   const [downloadPdfError, setDownloadPdfError] = useState<string | null>(null)
 
+  const [isDownloadingDocx, setIsDownloadingDocx] = useState(false)
+  const [downloadDocxError, setDownloadDocxError] = useState<string | null>(null)
+
   const tabs = [
     { id: 'suggestions' as const, label: 'Suggestions' },
     ...(isJobMatch ? [{ id: 'keywords' as const, label: 'Keywords' }] : []),
@@ -135,9 +138,35 @@ export function ScanResultTabs({
     }
   }
 
-  function handleDownloadDocx(acceptedDiff: RewriteDiffItem[]) {
-    // TODO: implement DOCX export
-    console.log('Download DOCX with changes:', acceptedDiff)
+  async function handleDownloadDocx(acceptedDiff: RewriteDiffItem[]) {
+    setIsDownloadingDocx(true)
+    setDownloadDocxError(null)
+
+    try {
+      const res = await fetch('/api/export/docx', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scan_id: scanId, accepted_diff: acceptedDiff }),
+      })
+
+      if (!res.ok) {
+        const err = (await res.json()) as ExportPdfErrorResponse
+        setDownloadDocxError(err.error ?? 'Export failed.')
+        return
+      }
+
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'resume.docx'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      setDownloadDocxError('Network error. Please try again.')
+    } finally {
+      setIsDownloadingDocx(false)
+    }
   }
 
   const acceptedCount = accepted.size
@@ -232,6 +261,8 @@ export function ScanResultTabs({
                 onDownloadDocx={handleDownloadDocx}
                 isDownloadingPdf={isDownloadingPdf}
                 downloadPdfError={downloadPdfError}
+                isDownloadingDocx={isDownloadingDocx}
+                downloadDocxError={downloadDocxError}
               />
             ) : feedback.length === 0 ? (
               <div

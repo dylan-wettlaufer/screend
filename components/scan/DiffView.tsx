@@ -9,9 +9,19 @@ interface DiffViewProps {
   onDownloadDocx: (acceptedDiff: RewriteDiffItem[]) => void
   isDownloadingPdf?: boolean
   downloadPdfError?: string | null
+  isDownloadingDocx?: boolean
+  downloadDocxError?: string | null
 }
 
-export function DiffView({ diff, onDownloadPdf, onDownloadDocx, isDownloadingPdf = false, downloadPdfError = null }: DiffViewProps) {
+export function DiffView({
+  diff,
+  onDownloadPdf,
+  onDownloadDocx,
+  isDownloadingPdf = false,
+  downloadPdfError = null,
+  isDownloadingDocx = false,
+  downloadDocxError = null,
+}: DiffViewProps) {
   const [unaccepted, setUnaccepted] = useState<Set<number>>(new Set())
 
   function toggleChange(index: number) {
@@ -144,10 +154,15 @@ export function DiffView({ diff, onDownloadPdf, onDownloadDocx, isDownloadingPdf
         )
       })}
 
-      {/* Download buttons — fixed bar rendered by ScanResultTabs, but also show inline if needed */}
+      {/* Error messages */}
       {downloadPdfError && (
         <p className="font-mono text-xs" style={{ color: 'var(--color-danger)' }}>
           {downloadPdfError}
+        </p>
+      )}
+      {downloadDocxError && (
+        <p className="font-mono text-xs" style={{ color: 'var(--color-danger)' }}>
+          {downloadDocxError}
         </p>
       )}
       <div className="flex gap-3 pt-2">
@@ -166,7 +181,7 @@ export function DiffView({ diff, onDownloadPdf, onDownloadDocx, isDownloadingPdf
         </button>
         <button
           type="button"
-          disabled={acceptedCount === 0}
+          disabled={acceptedCount === 0 || isDownloadingDocx}
           onClick={() => onDownloadDocx(acceptedDiff)}
           className="flex-1 rounded-element border py-2.5 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           style={{
@@ -175,7 +190,7 @@ export function DiffView({ diff, onDownloadPdf, onDownloadDocx, isDownloadingPdf
             background: 'var(--color-bg-raised)',
           }}
         >
-          Download DOCX
+          {isDownloadingDocx ? 'Generating DOCX…' : 'Download DOCX'}
         </button>
       </div>
     </div>

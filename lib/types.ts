@@ -120,6 +120,11 @@ export interface ExportPdfRequest {
   accepted_diff: RewriteDiffItem[]
 }
 
+export interface ExportDocxRequest {
+  scan_id: string
+  accepted_diff: RewriteDiffItem[]
+}
+
 export interface ExportPdfErrorResponse {
   error: string
   details?: string
