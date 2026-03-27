@@ -2,9 +2,10 @@
 
 /**
  * React preview mirroring lib/resumeLatex + lib/resumeModel section order and rules.
- * Uses design tokens only (no hex). Letter-width page shell for readability.
+ * Light “paper” shell and Source Serif 4 to approximate LaTeX/Jake’s-style PDF output.
  */
 
+import { Source_Serif_4 } from 'next/font/google'
 import type { StructuredResume } from '@/lib/types'
 import {
   filterResumeBullets,
@@ -21,24 +22,31 @@ import {
   subheadingDateRange,
 } from '@/lib/resumeModel'
 
+const resumePreviewFont = Source_Serif_4({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  display: 'swap',
+})
+
 interface JakesResumePreviewProps {
   resume: StructuredResume
 }
 
 function PreviewSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="mb-3">
+    <section className="mb-2.5">
       <h2
-        className="text-xs font-medium tracking-wide mb-0 pb-1"
+        className="text-[11px] font-medium tracking-[0.06em] mb-0 pb-0.5 leading-tight"
         style={{
           fontVariant: 'small-caps',
-          color: 'var(--color-text-primary)',
-          borderBottom: '0.5px solid var(--color-border)',
+          fontFeatureSettings: "'smcp', 'kern', 'liga'",
+          color: 'var(--resume-paper-fg)',
+          borderBottom: '0.5px solid var(--resume-paper-rule)',
         }}
       >
         {title}
       </h2>
-      <div className="mt-1.5">{children}</div>
+      <div className="mt-1">{children}</div>
     </section>
   )
 }
@@ -55,18 +63,30 @@ function PreviewSubheading({
   line2Right: string
 }) {
   return (
-    <div className="mb-2">
-      <div className="flex justify-between gap-3 text-[11px] leading-snug">
-        <span className="font-medium" style={{ color: 'var(--color-text-primary)' }}>
+    <div className="mb-1.5">
+      <div
+        className="flex justify-between gap-3 text-[11px]"
+        style={{ lineHeight: 1.18 }}
+      >
+        <span className="font-medium" style={{ color: 'var(--resume-paper-fg)' }}>
           {line1Left}
         </span>
-        <span className="shrink-0 text-right font-mono" style={{ color: 'var(--color-text-primary)' }}>
+        <span
+          className="shrink-0 text-right font-medium tabular-nums"
+          style={{ color: 'var(--resume-paper-fg)' }}
+        >
           {line1Right}
         </span>
       </div>
-      <div className="flex justify-between gap-3 text-[10px] leading-snug italic">
-        <span style={{ color: 'var(--color-text-secondary)' }}>{line2Left}</span>
-        <span className="shrink-0 text-right" style={{ color: 'var(--color-text-secondary)' }}>
+      <div
+        className="flex justify-between gap-3 text-[10.5px] italic"
+        style={{ lineHeight: 1.18 }}
+      >
+        <span style={{ color: 'var(--resume-paper-muted)' }}>{line2Left}</span>
+        <span
+          className="shrink-0 text-right font-normal not-italic"
+          style={{ color: 'var(--resume-paper-muted)' }}
+        >
           {line2Right}
         </span>
       </div>
@@ -78,9 +98,15 @@ function PreviewBulletList({ items }: { items: string[] }) {
   const filtered = filterResumeBullets(items)
   if (filtered.length === 0) return null
   return (
-    <ul className="list-disc pl-[0.62rem] space-y-0.5 mb-2" style={{ fontSize: '10px', lineHeight: 1.35 }}>
+    <ul
+      className="list-disc pl-[0.95rem] space-y-0 mb-1.5 marker:text-[var(--resume-paper-hint)]"
+      style={{
+        fontSize: '10.5px',
+        lineHeight: 1.22,
+      }}
+    >
       {filtered.map((b, i) => (
-        <li key={i} style={{ color: 'var(--color-text-secondary)' }}>
+        <li key={i} style={{ color: 'var(--resume-paper-muted)' }}>
           {b}
         </li>
       ))}
@@ -101,19 +127,22 @@ function PreviewProjectBlock({
 }) {
   return (
     <div className="mb-2">
-      <div className="flex justify-between gap-3 text-[10px] leading-snug mb-1">
-        <span style={{ color: 'var(--color-text-primary)' }}>
+      <div className="flex justify-between gap-3 text-[10.5px] leading-snug mb-1">
+        <span style={{ color: 'var(--resume-paper-fg)' }}>
           <span className="font-medium">{name}</span>
           {technologies.trim() !== '' && (
             <>
-              <span style={{ color: 'var(--color-text-tertiary)' }}>{' | '}</span>
-              <span className="italic" style={{ color: 'var(--color-text-secondary)' }}>
+              <span style={{ color: 'var(--resume-paper-hint)' }}>{' | '}</span>
+              <span className="italic font-normal" style={{ color: 'var(--resume-paper-muted)' }}>
                 {technologies}
               </span>
             </>
           )}
         </span>
-        <span className="shrink-0 text-right font-mono" style={{ color: 'var(--color-text-primary)' }}>
+        <span
+          className="shrink-0 text-right font-medium tabular-nums"
+          style={{ color: 'var(--resume-paper-fg)' }}
+        >
           {dateRight}
         </span>
       </div>
@@ -125,21 +154,33 @@ function PreviewProjectBlock({
 export function JakesResumePreview({ resume }: JakesResumePreviewProps) {
   return (
     <div
-      className="mx-auto w-full max-w-[8.5in] min-h-full px-6 py-5 rounded-element border"
+      className={[
+        resumePreviewFont.className,
+        'resume-preview-paper',
+        'mx-auto w-full max-w-[8.5in] min-h-full px-8 py-6 rounded-element border',
+      ].join(' ')}
       style={{
-        background: 'var(--color-bg-base)',
-        borderColor: 'var(--color-border)',
-        color: 'var(--color-text-primary)',
+        background: 'var(--resume-paper-bg)',
+        borderColor: 'var(--resume-paper-border)',
+        color: 'var(--resume-paper-fg)',
       }}
     >
-      <header className="text-center mb-4">
+      <header className="text-center mb-3.5">
         <h1
-          className="text-base font-medium mb-1"
-          style={{ fontVariant: 'small-caps', letterSpacing: '0.02em' }}
+          className="text-[17px] font-medium mb-1 leading-tight"
+          style={{
+            fontVariant: 'small-caps',
+            fontFeatureSettings: "'smcp', 'kern', 'liga'",
+            letterSpacing: '0.08em',
+            color: 'var(--resume-paper-fg)',
+          }}
         >
           {resume.name}
         </h1>
-        <p className="text-[10px] leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+        <p
+          className="text-[10px] tracking-wide"
+          style={{ color: 'var(--resume-paper-muted)', lineHeight: 1.25 }}
+        >
           {[
             resume.phone,
             resume.email,
@@ -170,12 +211,12 @@ export function JakesResumePreview({ resume }: JakesResumePreviewProps) {
       {hasSkillsContent(resume) && (
         <PreviewSection title="Technical skills">
           <div
-            className="text-[10px] leading-relaxed space-y-1 pl-1"
-            style={{ color: 'var(--color-text-secondary)' }}
+            className="text-[10.5px] space-y-0.5 pl-0.5"
+            style={{ color: 'var(--resume-paper-muted)', lineHeight: 1.22 }}
           >
             {getSkillLines(resume).map((line, i) => (
               <p key={i}>
-                <span className="font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                <span className="font-medium" style={{ color: 'var(--resume-paper-fg)' }}>
                   {line.label}:
                 </span>{' '}
                 {line.body}

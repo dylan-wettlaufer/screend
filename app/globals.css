@@ -25,6 +25,14 @@
   --warning: #fb923c;
   --success: #3b82f6;
 
+  /* Live resume preview — LaTeX / print paper */
+  --resume-paper-bg: #ffffff;
+  --resume-paper-fg: #111111;
+  --resume-paper-muted: #2e2e2e;
+  --resume-paper-hint: #4a4a4a;
+  --resume-paper-rule: #000000;
+  --resume-paper-border: #d4d4d4;
+
   /* ── shadcn semantic variables ───────────────────────────── */
   --background: #0a0a0b;
   --foreground: #fafafa;
@@ -123,4 +131,12 @@ body {
 @layer base {
   * { @apply border-border outline-ring/50; }
   body { @apply bg-background text-foreground font-sans; }
+}
+
+/* Isolate live preview from app dark theme; serif set via next/font on the root */
+.resume-preview-paper {
+  background: var(--resume-paper-bg);
+  color: var(--resume-paper-fg);
+  font-feature-settings: 'kern' 1, 'liga' 1;
+  -webkit-font-smoothing: antialiased;
 }
