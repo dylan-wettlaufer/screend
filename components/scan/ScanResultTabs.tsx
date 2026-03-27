@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { FeedbackItem } from '@/components/scan/FeedbackItem'
 import { DiffView } from '@/components/scan/DiffView'
 import type {
@@ -9,6 +9,7 @@ import type {
   RewriteResponse,
   RewriteErrorResponse,
   ExportPdfErrorResponse,
+  StructuredResume,
 } from '@/lib/types'
 
 interface ScanResultTabsProps {
@@ -19,6 +20,8 @@ interface ScanResultTabsProps {
   scanId: string
   activeFeedbackId: string | null
   onFeedbackSelect: (id: string | null) => void
+  structuredResume: StructuredResume | null
+  onStructuredResumeChange: (r: StructuredResume | null) => void
 }
 
 type RewriteState = 'idle' | 'loading' | 'error' | 'done'
@@ -31,6 +34,8 @@ export function ScanResultTabs({
   scanId,
   activeFeedbackId,
   onFeedbackSelect,
+  structuredResume,
+  onStructuredResumeChange,
 }: ScanResultTabsProps) {
   const [tab, setTab] = useState<'suggestions' | 'keywords'>('suggestions')
   const [accepted, setAccepted] = useState<Set<string>>(new Set())
@@ -45,6 +50,32 @@ export function ScanResultTabs({
 
   const [isDownloadingDocx, setIsDownloadingDocx] = useState(false)
   const [downloadDocxError, setDownloadDocxError] = useState<string | null>(null)
+
+  const structureDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    return () => {
+      if (structureDebounceRef.current) clearTimeout(structureDebounceRef.current)
+    }
+  }, [])
+
+  const scheduleStructureRefetch = useCallback(
+    (acceptedDiff: RewriteDiffItem[]) => {
+      if (structureDebounceRef.current) clearTimeout(structureDebounceRef.current)
+      structureDebounceRef.current = setTimeout(async () => {
+        structureDebounceRef.current = null
+        const res = await fetch('/api/structure', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scan_id: scanId, accepted_diff: acceptedDiff }),
+        })
+        if (res.ok) {
+          const next = (await res.json()) as StructuredResume
+          onStructuredResumeChange(next)
+        }
+      }, 350)
+    },
+    [scanId, onStructuredResumeChange],
+  )
 
   const tabs = [
     { id: 'suggestions' as const, label: 'Suggestions' },
@@ -80,6 +111,7 @@ export function ScanResultTabs({
   async function handleGenerate() {
     setRewriteState('loading')
     setRewriteError(null)
+    onStructuredResumeChange(null)
 
     try {
       const res = await fetch('/api/rewrite', {
@@ -99,8 +131,18 @@ export function ScanResultTabs({
         return
       }
 
-      setDiff((data as RewriteResponse).diff)
+      const newDiff = (data as RewriteResponse).diff
+      setDiff(newDiff)
       setRewriteState('done')
+
+      const structRes = await fetch('/api/structure', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scan_id: scanId, accepted_diff: newDiff }),
+      })
+      if (structRes.ok) {
+        onStructuredResumeChange((await structRes.json()) as StructuredResume)
+      }
     } catch {
       setRewriteError('Network error. Please try again.')
       setRewriteState('error')
@@ -115,7 +157,11 @@ export function ScanResultTabs({
       const res = await fetch('/api/export/pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scan_id: scanId, accepted_diff: acceptedDiff }),
+        body: JSON.stringify({
+          scan_id: scanId,
+          accepted_diff: acceptedDiff,
+          ...(structuredResume != null ? { structured_resume: structuredResume } : {}),
+        }),
       })
 
       if (!res.ok) {
@@ -263,6 +309,7 @@ export function ScanResultTabs({
                 downloadPdfError={downloadPdfError}
                 isDownloadingDocx={isDownloadingDocx}
                 downloadDocxError={downloadDocxError}
+                onAcceptedDiffChange={scheduleStructureRefetch}
               />
             ) : feedback.length === 0 ? (
               <div

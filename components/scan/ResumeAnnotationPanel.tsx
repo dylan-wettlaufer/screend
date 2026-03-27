@@ -2,7 +2,11 @@
 
 import { useRef, useEffect, useMemo } from 'react'
 import { PdfAnnotationViewer } from '@/components/scan/PdfAnnotationViewer'
-import type { FeedbackItem } from '@/lib/types'
+import { ResumeStructuredEditor } from '@/components/scan/ResumeStructuredEditor'
+import { JakesResumePreview } from '@/components/scan/jakesResumePreview/JakesResumePreview'
+import type { FeedbackItem, StructuredResume } from '@/lib/types'
+
+export type WorkbenchTab = 'submitted' | 'editor' | 'preview'
 
 interface ResumeAnnotationPanelProps {
   resumeText: string
@@ -11,6 +15,12 @@ interface ResumeAnnotationPanelProps {
   feedback: FeedbackItem[]
   keywordsMissing: string[]
   activeFeedbackId: string | null
+  structuredResume: StructuredResume | null
+  /** True while initial POST /api/structure runs on scan load */
+  isBootstrappingStructure?: boolean
+  workbenchTab: WorkbenchTab
+  onWorkbenchTabChange: (tab: WorkbenchTab) => void
+  onStructuredResumeChange: (next: StructuredResume) => void
 }
 
 // ── Text-fallback helpers (used when no PDF is available) ──────────────────
@@ -60,6 +70,39 @@ const SEVERITY_DOT_COLOR: Record<FeedbackItem['severity'], string> = {
 
 // ── Main component ─────────────────────────────────────────────────────────
 
+function WorkbenchTabButton({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean
+  label: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-pill px-3 py-1 text-xs font-medium transition-colors"
+      style={
+        active
+          ? {
+              background: 'var(--color-bg-hover)',
+              color: 'var(--color-text-primary)',
+              border: '0.5px solid var(--color-border-strong)',
+            }
+          : {
+              background: 'transparent',
+              color: 'var(--color-text-tertiary)',
+              border: '0.5px solid transparent',
+            }
+      }
+    >
+      {label}
+    </button>
+  )
+}
+
 export function ResumeAnnotationPanel({
   resumeText,
   resumeSignedUrl,
@@ -67,40 +110,108 @@ export function ResumeAnnotationPanel({
   feedback,
   keywordsMissing,
   activeFeedbackId,
+  structuredResume,
+  isBootstrappingStructure = false,
+  workbenchTab,
+  onWorkbenchTabChange,
+  onStructuredResumeChange,
 }: ResumeAnnotationPanelProps) {
   const isPdfMode = resumeIsPdf && !!resumeSignedUrl
+  const showWorkbench = structuredResume !== null
+  const showWorkbenchChrome = showWorkbench || isBootstrappingStructure
 
   return (
     <>
       <div
-        className="flex items-center justify-between px-4 pt-4 pb-3 shrink-0"
+        className="flex items-center justify-between px-4 pt-4 pb-3 shrink-0 gap-2 flex-wrap"
         style={{ borderBottom: '0.5px solid var(--color-border)' }}
       >
         <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
-          Submitted resume
+          {showWorkbenchChrome ? 'Resume workbench' : 'Submitted resume'}
         </p>
-        {resumeSignedUrl && (
-          <a
-            href={resumeSignedUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="font-mono text-xs transition-colors"
-            style={{ color: 'var(--color-text-tertiary)' }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.color = 'var(--color-text-secondary)')
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.color = 'var(--color-text-tertiary)')
-            }
-          >
-            open ↗
-          </a>
-        )}
+        <div className="flex items-center gap-2">
+          {showWorkbench && (
+            <div
+              className="flex items-center gap-0.5 rounded-element border p-0.5 flex-wrap"
+              style={{ borderColor: 'var(--color-border)', background: 'var(--color-bg-raised)' }}
+            >
+              <WorkbenchTabButton
+                active={workbenchTab === 'submitted'}
+                label="Submitted"
+                onClick={() => onWorkbenchTabChange('submitted')}
+              />
+              <WorkbenchTabButton
+                active={workbenchTab === 'editor'}
+                label="Editor"
+                onClick={() => onWorkbenchTabChange('editor')}
+              />
+              <WorkbenchTabButton
+                active={workbenchTab === 'preview'}
+                label="Preview"
+                onClick={() => onWorkbenchTabChange('preview')}
+              />
+            </div>
+          )}
+          {resumeSignedUrl && (
+            <a
+              href={resumeSignedUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="font-mono text-xs transition-colors"
+              style={{ color: 'var(--color-text-tertiary)' }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.color = 'var(--color-text-secondary)')
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.color = 'var(--color-text-tertiary)')
+              }
+            >
+              open ↗
+            </a>
+          )}
+        </div>
       </div>
 
       {/* Panel body */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        {isPdfMode ? (
+        {isBootstrappingStructure && structuredResume === null ? (
+          <div
+            className="h-full min-h-0 flex flex-col items-center justify-center gap-2 px-6 py-8"
+            aria-busy="true"
+            aria-live="polite"
+          >
+            <p className="text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>
+              Parsing resume into the editor…
+            </p>
+            <p className="font-mono text-xs text-center max-w-sm" style={{ color: 'var(--color-text-tertiary)' }}>
+              This usually takes a few seconds.
+            </p>
+          </div>
+        ) : showWorkbench && workbenchTab === 'submitted' ? (
+          isPdfMode ? (
+            <PdfAnnotationViewer url={resumeSignedUrl!} />
+          ) : (
+            <div className="h-full min-h-0 overflow-y-auto">
+              <TextAnnotationView
+                resumeText={resumeText}
+                feedback={feedback}
+                keywordsMissing={keywordsMissing}
+                activeFeedbackId={activeFeedbackId}
+              />
+            </div>
+          )
+        ) : showWorkbench ? (
+          <div className="h-full min-h-0 overflow-y-auto px-4 py-3">
+            {workbenchTab === 'editor' ? (
+              <ResumeStructuredEditor
+                value={structuredResume!}
+                onChange={onStructuredResumeChange}
+              />
+            ) : (
+              <JakesResumePreview resume={structuredResume!} />
+            )}
+          </div>
+        ) : isPdfMode ? (
           <PdfAnnotationViewer url={resumeSignedUrl!} />
         ) : (
           <TextAnnotationView

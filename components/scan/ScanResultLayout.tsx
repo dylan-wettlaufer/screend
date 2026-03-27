@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ScoreRing } from '@/components/scan/ScoreRing'
 import { SubScoreBar } from '@/components/scan/SubScoreBar'
 import { ScanResultTabs } from '@/components/scan/ScanResultTabs'
-import { ResumeAnnotationPanel } from '@/components/scan/ResumeAnnotationPanel'
-import type { ScanRecord, FeedbackItem } from '@/lib/types'
+import { ResumeAnnotationPanel, type WorkbenchTab } from '@/components/scan/ResumeAnnotationPanel'
+import type { ScanRecord, FeedbackItem, StructuredResume } from '@/lib/types'
 
 type ViewMode = 'split' | 'analysis' | 'document'
 
@@ -46,6 +46,44 @@ export function ScanResultLayout({
 }: ScanResultLayoutProps) {
   const [activeFeedbackId, setActiveFeedbackId] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('split')
+  const [structuredResume, setStructuredResume] = useState<StructuredResume | null>(null)
+  const [workbenchTab, setWorkbenchTab] = useState<WorkbenchTab>('editor')
+  const [isStructureBootstrapLoading, setIsStructureBootstrapLoading] = useState(true)
+
+  useEffect(() => {
+    setStructuredResume(null)
+    setIsStructureBootstrapLoading(true)
+    let cancelled = false
+
+    ;(async () => {
+      try {
+        const res = await fetch('/api/structure', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scan_id: scan.id, accepted_diff: [] }),
+        })
+
+        if (cancelled) return
+
+        if (res.ok) {
+          const data = (await res.json()) as StructuredResume
+          if (!cancelled) {
+            setStructuredResume(data)
+          }
+        }
+      } catch {
+        // Left pane falls back to submitted PDF/text
+      } finally {
+        if (!cancelled) {
+          setIsStructureBootstrapLoading(false)
+        }
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [scan.id])
 
   function handleFeedbackSelect(id: string | null) {
     setActiveFeedbackId((prev) => (prev === id ? null : id))
@@ -127,7 +165,7 @@ export function ScanResultLayout({
         className={[
           'min-h-0 flex-1',
           isSplit
-            ? 'grid gap-4 xl:grid-cols-[minmax(0,0.78fr)_minmax(0,1.28fr)] xl:[grid-template-rows:minmax(0,1fr)]'
+            ? 'grid gap-4 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.28fr)] lg:[grid-template-rows:minmax(0,1fr)]'
             : 'flex gap-4',
         ].join(' ')}
       >
@@ -137,8 +175,8 @@ export function ScanResultLayout({
             className={[
               'rounded-card border flex flex-col min-h-0',
               isSplit
-                ? 'hidden xl:flex h-full'
-                : 'hidden xl:flex flex-1 h-full',
+                ? 'hidden lg:flex h-full'
+                : 'hidden lg:flex flex-1 h-full',
             ].join(' ')}
             style={{
               background: 'var(--color-bg-surface)',
@@ -152,6 +190,11 @@ export function ScanResultLayout({
               feedback={feedback}
               keywordsMissing={keywordsMissing}
               activeFeedbackId={activeFeedbackId}
+              structuredResume={structuredResume}
+              isBootstrappingStructure={isStructureBootstrapLoading}
+              workbenchTab={workbenchTab}
+              onWorkbenchTabChange={setWorkbenchTab}
+              onStructuredResumeChange={setStructuredResume}
             />
           </section>
         )}
@@ -207,6 +250,8 @@ export function ScanResultLayout({
                 scanId={scan.id}
                 activeFeedbackId={activeFeedbackId}
                 onFeedbackSelect={handleFeedbackSelect}
+                structuredResume={structuredResume}
+                onStructuredResumeChange={setStructuredResume}
               />
             </div>
           </section>

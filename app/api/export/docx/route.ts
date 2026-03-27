@@ -6,6 +6,7 @@ import { structureResume } from '@/lib/gemini'
 import { buildDocx } from '@/lib/resumeDocx'
 import {
   RewriteResultSchema,
+  StructuredResumeSchema,
   type ExportDocxRequest,
   type ExportPdfErrorResponse,
 } from '@/lib/types'
@@ -26,6 +27,14 @@ export async function POST(req: NextRequest): Promise<Response> {
   const diffParsed = RewriteResultSchema.safeParse(body.accepted_diff)
   if (!body.scan_id || !diffParsed.success) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
+
+  let structuredOverride = null as ReturnType<typeof StructuredResumeSchema.safeParse> | null
+  if (body.structured_resume !== undefined) {
+    structuredOverride = StructuredResumeSchema.safeParse(body.structured_resume)
+    if (!structuredOverride.success) {
+      return NextResponse.json({ error: 'Invalid structured resume.' }, { status: 400 })
+    }
   }
 
   const supabase = createAdminClient()
@@ -51,23 +60,27 @@ export async function POST(req: NextRequest): Promise<Response> {
     return NextResponse.json({ error: 'Scan not found' }, { status: 404 })
   }
 
-  const { text: mergedText, skipped: mergeSkipped } = applyRewriteDiff(
-    scan.resume_text as string,
-    diffParsed.data,
-  )
-  if (mergeSkipped.length > 0) {
-    console.warn('[export/docx] applyRewriteDiff skipped (no match in resume_text):', mergeSkipped)
-  }
-
   let structured
-  try {
-    structured = await structureResume(mergedText)
-  } catch (err) {
-    console.error('structureResume error:', err)
-    return NextResponse.json(
-      { error: 'Failed to structure resume. Please try again.' },
-      { status: 500 },
+  if (structuredOverride?.success) {
+    structured = structuredOverride.data
+  } else {
+    const { text: mergedText, skipped: mergeSkipped } = applyRewriteDiff(
+      scan.resume_text as string,
+      diffParsed.data,
     )
+    if (mergeSkipped.length > 0) {
+      console.warn('[export/docx] applyRewriteDiff skipped (no match in resume_text):', mergeSkipped)
+    }
+
+    try {
+      structured = await structureResume(mergedText)
+    } catch (err) {
+      console.error('structureResume error:', err)
+      return NextResponse.json(
+        { error: 'Failed to structure resume. Please try again.' },
+        { status: 500 },
+      )
+    }
   }
 
   let docxBuffer: Buffer

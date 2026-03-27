@@ -6,9 +6,9 @@
 
 :root {
   /* ── Screend palette tokens ──────────────────────────────── */
-  --bg-base: #090909;
-  --bg-surface: #101010;
-  --bg-raised: ##1C1C1C;
+  --bg-base: #0D0D0D;
+  --bg-surface: #1A1A1A;
+  --bg-raised: #262626;
   --bg-hover: #212126;
 
   --border-screend: #27272a;
@@ -17,8 +17,8 @@
   --accent-screend: #67aaf3;
   --accent-subtle: #17171a;
 
-  --text-primary: #fafafa;
-  --text-secondary: #a1a1aa;
+  --text-primary: #F2F2F2;
+  --text-secondary: #B3B3B3;
   --text-tertiary: #71717a;
 
   --danger: #f87171;

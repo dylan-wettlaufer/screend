@@ -118,14 +118,24 @@ export const StructuredResumeSchema = z.object({
 
 export type StructuredResume = z.infer<typeof StructuredResumeSchema>
 
+export const StructureResumeRequestSchema = z.object({
+  scan_id: z.string(),
+  accepted_diff: RewriteResultSchema,
+})
+
+export type StructureResumeRequest = z.infer<typeof StructureResumeRequestSchema>
+
 export interface ExportPdfRequest {
   scan_id: string
   accepted_diff: RewriteDiffItem[]
+  /** When set, skips merge + AI structure; must match current Jake's template shape */
+  structured_resume?: StructuredResume
 }
 
 export interface ExportDocxRequest {
   scan_id: string
   accepted_diff: RewriteDiffItem[]
+  structured_resume?: StructuredResume
 }
 
 export interface ExportPdfErrorResponse {

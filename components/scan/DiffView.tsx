@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { RewriteDiffItem } from '@/lib/types'
 
 interface DiffViewProps {
@@ -11,6 +11,8 @@ interface DiffViewProps {
   downloadPdfError?: string | null
   isDownloadingDocx?: boolean
   downloadDocxError?: string | null
+  /** Called when the set of accepted lines changes (e.g. to refetch structured JSON). */
+  onAcceptedDiffChange?: (acceptedDiff: RewriteDiffItem[]) => void
 }
 
 export function DiffView({
@@ -21,8 +23,13 @@ export function DiffView({
   downloadPdfError = null,
   isDownloadingDocx = false,
   downloadDocxError = null,
+  onAcceptedDiffChange,
 }: DiffViewProps) {
   const [unaccepted, setUnaccepted] = useState<Set<number>>(new Set())
+
+  useEffect(() => {
+    setUnaccepted(new Set())
+  }, [diff])
 
   function toggleChange(index: number) {
     setUnaccepted((prev) => {
@@ -38,6 +45,20 @@ export function DiffView({
 
   const acceptedDiff = diff.filter((_, i) => !unaccepted.has(i))
   const acceptedCount = acceptedDiff.length
+
+  const lastAcceptedKeyRef = useRef<string>('')
+  useEffect(() => {
+    lastAcceptedKeyRef.current = ''
+  }, [diff])
+
+  useEffect(() => {
+    if (!onAcceptedDiffChange) return
+    const accepted = diff.filter((_, i) => !unaccepted.has(i))
+    const key = JSON.stringify(accepted)
+    if (key === lastAcceptedKeyRef.current) return
+    lastAcceptedKeyRef.current = key
+    onAcceptedDiffChange(accepted)
+  }, [diff, unaccepted, onAcceptedDiffChange])
 
   return (
     <div className="flex flex-col gap-4 pb-24">

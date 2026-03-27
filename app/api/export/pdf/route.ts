@@ -6,6 +6,7 @@ import { structureResume } from '@/lib/gemini'
 import { buildLatex } from '@/lib/resumeLatex'
 import {
   RewriteResultSchema,
+  StructuredResumeSchema,
   type ExportPdfRequest,
   type ExportPdfErrorResponse,
 } from '@/lib/types'
@@ -53,23 +54,31 @@ export async function POST(
     return NextResponse.json({ error: 'Scan not found' }, { status: 404 })
   }
 
-  const { text: mergedText, skipped: mergeSkipped } = applyRewriteDiff(
-    scan.resume_text as string,
-    diffParsed.data,
-  )
-  if (mergeSkipped.length > 0) {
-    console.warn('[export/pdf] applyRewriteDiff skipped (no match in resume_text):', mergeSkipped)
-  }
-
   let structured
-  try {
-    structured = await structureResume(mergedText)
-  } catch (err) {
-    console.error('structureResume error:', err)
-    return NextResponse.json(
-      { error: 'Failed to structure resume. Please try again.' },
-      { status: 500 }
+  if (body.structured_resume !== undefined) {
+    const parsedResume = StructuredResumeSchema.safeParse(body.structured_resume)
+    if (!parsedResume.success) {
+      return NextResponse.json({ error: 'Invalid structured resume.' }, { status: 400 })
+    }
+    structured = parsedResume.data
+  } else {
+    const { text: mergedText, skipped: mergeSkipped } = applyRewriteDiff(
+      scan.resume_text as string,
+      diffParsed.data,
     )
+    if (mergeSkipped.length > 0) {
+      console.warn('[export/pdf] applyRewriteDiff skipped (no match in resume_text):', mergeSkipped)
+    }
+
+    try {
+      structured = await structureResume(mergedText)
+    } catch (err) {
+      console.error('structureResume error:', err)
+      return NextResponse.json(
+        { error: 'Failed to structure resume. Please try again.' },
+        { status: 500 }
+      )
+    }
   }
 
   const tex = buildLatex(structured)

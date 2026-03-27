@@ -1,10 +1,20 @@
 import type { StructuredResume } from '@/lib/types'
+import {
+  filterResumeBullets,
+  getEducationBullets,
+  getSkillLines,
+  getVisibleEducation,
+  getVisibleExperience,
+  getVisibleProjects,
+  projectDateRight,
+  subheadingDateRange,
+} from '@/lib/resumeModel'
 
 /**
  * Escapes characters that are special in LaTeX so they render as literal text.
  */
 function esc(raw: string): string {
-  if (!raw) return '';
+  if (!raw) return ''
   return raw
     .replace(/\\/g, '\\textbackslash{}')
     .replace(/&/g, '\\&')
@@ -22,60 +32,49 @@ function esc(raw: string): string {
  * Renders itemize bullets.
  */
 function bullets(items: string[]): string {
-  return items
-    .filter((b) => b && b.trim() !== '')
+  return filterResumeBullets(items)
     .map((b) => `    \\resumeItem{${esc(b)}}`)
     .join('\n')
 }
 
 export function buildLatex(resume: StructuredResume): string {
-  // 1. Education — honors and coursework rendered as bullets below the subheading
-  const educationSection = resume.education
-    .filter((e) => e.school.trim() !== '')
+  const educationSection = getVisibleEducation(resume)
     .map((e) => {
-      const eduBullets = [
-        e.honors?.trim() ?? '',
-        e.coursework?.trim() ? `Coursework: ${e.coursework}` : '',
-      ].filter(Boolean)
+      const eduBullets = getEducationBullets(e)
       const itemize = bullets(eduBullets)
       return `
   \\resumeSubheading
-    {${esc(e.school)}}{${esc(e.start)} -- ${esc(e.end)}}
+    {${esc(e.school)}}{${esc(subheadingDateRange(e.start, e.end))}}
     {${esc(e.degree)}}{${esc(e.location)}}
 ${itemize ? `  \\resumeItemListStart\n${itemize}\n  \\resumeItemListEnd` : ''}`
     })
     .join('\n')
 
-  // 2. Technical Skills (Moved up to follow Education) [cite: 46]
-  const skillLines = [
-    resume.skills.languages?.trim() ? `\\textbf{Languages}{: ${esc(resume.skills.languages)}}` : '',
-    resume.skills.frameworks?.trim() ? `\\textbf{Frameworks}{: ${esc(resume.skills.frameworks)}}` : '',
-    resume.skills.developer_tools?.trim() ? `\\textbf{Developer Tools}{: ${esc(resume.skills.developer_tools)}}` : '',
-    resume.skills.libraries?.trim() ? `\\textbf{Libraries}{: ${esc(resume.skills.libraries)}}` : '',
-  ].filter(Boolean).join(' \\\\\n ')
+  const skillLines = getSkillLines(resume)
+    .map((s) => `\\textbf{${esc(s.label)}}{: ${esc(s.body)}}`)
+    .join(' \\\\\n ')
 
-  // 3. Experience [cite: 47-70]
-  const experienceSection = resume.experience
-    .filter((e) => e.company.trim() !== '')
+  const experienceSection = getVisibleExperience(resume)
     .map((e) => {
       const itemize = bullets(e.bullets)
       return `
   \\resumeSubheading
-    {${esc(e.company)}}{${esc(e.start)} -- ${esc(e.end)}}
+    {${esc(e.company)}}{${esc(subheadingDateRange(e.start, e.end))}}
     {${esc(e.title)}}{${esc(e.location)}}
 ${itemize ? `  \\resumeItemListStart\n${itemize}\n  \\resumeItemListEnd` : ''}`
     })
     .join('\n')
 
-  // 4. Projects (Categorized logic) [cite: 71-79]
-  const projectsSection = resume.projects
-    .filter((p) => p.name.trim() !== '')
+  const projectsSection = getVisibleProjects(resume)
     .map((p) => {
       const itemize = bullets(p.bullets)
-      const techLine = p.technologies?.trim() ? ` $|$ \\textit{${esc(p.technologies)}}` : ''
+      const techLine = p.technologies?.trim()
+        ? ` $|$ \\textit{${esc(p.technologies)}}`
+        : ''
+      const dates = esc(projectDateRight(p.start, p.end))
       return `
   \\resumeProjectHeading
-    {\\textbf{${esc(p.name)}}${techLine}}{${esc(p.start)}${p.end ? ` -- ${esc(p.end)}` : ''}}
+    {\\textbf{${esc(p.name)}}${techLine}}{${dates}}
 ${itemize ? `  \\resumeItemListStart\n${itemize}\n  \\resumeItemListEnd` : ''}`
     })
     .join('\n')
@@ -152,9 +151,13 @@ ${itemize ? `  \\resumeItemListStart\n${itemize}\n  \\resumeItemListEnd` : ''}`
   \\textbf{\\LARGE \\scshape ${esc(resume.name)}} \\\\ \\vspace{1pt}
   \\small ${esc(resume.phone)} $|$ 
   \\href{mailto:${esc(resume.email)}}{\\underline{${esc(resume.email)}}}${
-    resume.linkedin?.trim() ? ` $|$ \\href{https://linkedin.com/in/${esc(resume.linkedin)}}{\\underline{linkedin.com/in/${esc(resume.linkedin)}}}` : ''
+    resume.linkedin?.trim()
+      ? ` $|$ \\href{https://linkedin.com/in/${esc(resume.linkedin)}}{\\underline{linkedin.com/in/${esc(resume.linkedin)}}}`
+      : ''
   }${
-    resume.github?.trim() ? ` $|$ \\href{https://github.com/${esc(resume.github)}}{\\underline{github.com/${esc(resume.github)}}}` : ''
+    resume.github?.trim()
+      ? ` $|$ \\href{https://github.com/${esc(resume.github)}}{\\underline{github.com/${esc(resume.github)}}}`
+      : ''
   }
 \\end{center}
 
