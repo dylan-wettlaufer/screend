@@ -7,9 +7,11 @@ interface DiffViewProps {
   diff: RewriteDiffItem[]
   onDownloadPdf: (acceptedDiff: RewriteDiffItem[]) => void
   onDownloadDocx: (acceptedDiff: RewriteDiffItem[]) => void
+  isDownloadingPdf?: boolean
+  downloadPdfError?: string | null
 }
 
-export function DiffView({ diff, onDownloadPdf, onDownloadDocx }: DiffViewProps) {
+export function DiffView({ diff, onDownloadPdf, onDownloadDocx, isDownloadingPdf = false, downloadPdfError = null }: DiffViewProps) {
   const [unaccepted, setUnaccepted] = useState<Set<number>>(new Set())
 
   function toggleChange(index: number) {
@@ -143,10 +145,15 @@ export function DiffView({ diff, onDownloadPdf, onDownloadDocx }: DiffViewProps)
       })}
 
       {/* Download buttons — fixed bar rendered by ScanResultTabs, but also show inline if needed */}
+      {downloadPdfError && (
+        <p className="font-mono text-xs" style={{ color: 'var(--color-danger)' }}>
+          {downloadPdfError}
+        </p>
+      )}
       <div className="flex gap-3 pt-2">
         <button
           type="button"
-          disabled={acceptedCount === 0}
+          disabled={acceptedCount === 0 || isDownloadingPdf}
           onClick={() => onDownloadPdf(acceptedDiff)}
           className="flex-1 rounded-element border py-2.5 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           style={{
@@ -155,7 +162,7 @@ export function DiffView({ diff, onDownloadPdf, onDownloadDocx }: DiffViewProps)
             background: 'var(--color-bg-raised)',
           }}
         >
-          Download PDF
+          {isDownloadingPdf ? 'Generating PDF…' : 'Download PDF'}
         </button>
         <button
           type="button"

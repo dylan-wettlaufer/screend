@@ -205,7 +205,6 @@ export function ScanResultLayout({
                 keywordsMissing={keywordsMissing}
                 isJobMatch={isJobMatch}
                 scanId={scan.id}
-                resumeText={scan.resume_text}
                 activeFeedbackId={activeFeedbackId}
                 onFeedbackSelect={handleFeedbackSelect}
               />

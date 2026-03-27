@@ -22,12 +22,10 @@ function esc(raw: string): string {
  * Renders a single itemize bullet. Empty strings are skipped.
  */
 function bullets(items: string[]): string {
-  const rendered = items
+  return items
     .filter((b) => b.trim() !== '')
     .map((b) => `      \\item ${esc(b)}`)
     .join('\n')
-  if (!rendered) return ''
-  return `    \\begin{itemize}\n${rendered}\n    \\end{itemize}`
 }
 
 /**
@@ -109,7 +107,6 @@ ${itemize ? `  \\resumeItemListStart\n${itemize}\n  \\resumeItemListEnd` : ''}`
 \\usepackage{fancyhdr}
 \\usepackage[english]{babel}
 \\usepackage{tabularx}
-\\input{glyphtounicode}
 
 \\pagestyle{fancy}
 \\fancyhf{}
@@ -131,8 +128,6 @@ ${itemize ? `  \\resumeItemListStart\n${itemize}\n  \\resumeItemListEnd` : ''}`
 \\titleformat{\\section}{
   \\vspace{-4pt}\\scshape\\raggedright\\large
 }{}{0em}{}[\\color{black}\\titlerule \\vspace{-5pt}]
-
-\\pdfgentounicode=1
 
 %-------------------------
 % Custom commands
@@ -175,31 +170,31 @@ ${itemize ? `  \\resumeItemListStart\n${itemize}\n  \\resumeItemListEnd` : ''}`
   }
 \\end{center}
 
-%-----------EDUCATION-----------
+${educationSection.trim() !== '' ? `%-----------EDUCATION-----------
 \\section{Education}
   \\resumeSubHeadingListStart
 ${educationSection}
   \\resumeSubHeadingListEnd
-
-%-----------EXPERIENCE-----------
+` : ''}
+${experienceSection.trim() !== '' ? `%-----------EXPERIENCE-----------
 \\section{Experience}
   \\resumeSubHeadingListStart
 ${experienceSection}
   \\resumeSubHeadingListEnd
-
-%-----------PROJECTS-----------
+` : ''}
+${projectsSection.trim() !== '' ? `%-----------PROJECTS-----------
 \\section{Projects}
   \\resumeSubHeadingListStart
 ${projectsSection}
   \\resumeSubHeadingListEnd
-
-%-----------TECHNICAL SKILLS-----------
+` : ''}
+${skillLines.trim() !== '' ? `%-----------TECHNICAL SKILLS-----------
 \\section{Technical Skills}
   \\begin{itemize}[leftmargin=0.15in, label={}]
     \\small{\\item{
 ${skillLines}
     }}
-  \\end{itemize}
+  \\end{itemize}` : ''}
 
 %-------------------------------------------
 \\end{document}

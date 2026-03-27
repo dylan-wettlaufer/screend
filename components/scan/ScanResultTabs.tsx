@@ -3,12 +3,12 @@
 import { useState } from 'react'
 import { FeedbackItem } from '@/components/scan/FeedbackItem'
 import { DiffView } from '@/components/scan/DiffView'
-import { applyRewriteDiff } from '@/lib/applyRewriteDiff'
 import type {
   FeedbackItem as FeedbackItemType,
   RewriteDiffItem,
   RewriteResponse,
   RewriteErrorResponse,
+  ExportPdfErrorResponse,
 } from '@/lib/types'
 
 interface ScanResultTabsProps {
@@ -17,7 +17,6 @@ interface ScanResultTabsProps {
   keywordsMissing: string[]
   isJobMatch: boolean
   scanId: string
-  resumeText: string
   activeFeedbackId: string | null
   onFeedbackSelect: (id: string | null) => void
 }
@@ -30,7 +29,6 @@ export function ScanResultTabs({
   keywordsMissing,
   isJobMatch,
   scanId,
-  resumeText,
   activeFeedbackId,
   onFeedbackSelect,
 }: ScanResultTabsProps) {
@@ -41,6 +39,9 @@ export function ScanResultTabs({
   const [rewriteState, setRewriteState] = useState<RewriteState>('idle')
   const [rewriteError, setRewriteError] = useState<string | null>(null)
   const [diff, setDiff] = useState<RewriteDiffItem[]>([])
+
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false)
+  const [downloadPdfError, setDownloadPdfError] = useState<string | null>(null)
 
   const tabs = [
     { id: 'suggestions' as const, label: 'Suggestions' },
@@ -103,13 +104,35 @@ export function ScanResultTabs({
     }
   }
 
-  function handleDownloadPdf(acceptedDiff: RewriteDiffItem[]) {
-    const { text, skipped } = applyRewriteDiff(resumeText, acceptedDiff)
-    if (skipped.length > 0) {
-      console.warn('applyRewriteDiff: the following lines were not matched in the resume:', skipped)
+  async function handleDownloadPdf(acceptedDiff: RewriteDiffItem[]) {
+    setIsDownloadingPdf(true)
+    setDownloadPdfError(null)
+
+    try {
+      const res = await fetch('/api/export/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scan_id: scanId, accepted_diff: acceptedDiff }),
+      })
+
+      if (!res.ok) {
+        const err = (await res.json()) as ExportPdfErrorResponse
+        setDownloadPdfError(err.error ?? 'Export failed.')
+        return
+      }
+
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'resume.pdf'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      setDownloadPdfError('Network error. Please try again.')
+    } finally {
+      setIsDownloadingPdf(false)
     }
-    // TODO: pass `text` into structured JSON → LaTeX → Tectonic pipeline
-    console.log('Merged resume text:', text)
   }
 
   function handleDownloadDocx(acceptedDiff: RewriteDiffItem[]) {
@@ -207,6 +230,8 @@ export function ScanResultTabs({
                 diff={diff}
                 onDownloadPdf={handleDownloadPdf}
                 onDownloadDocx={handleDownloadDocx}
+                isDownloadingPdf={isDownloadingPdf}
+                downloadPdfError={downloadPdfError}
               />
             ) : feedback.length === 0 ? (
               <div
