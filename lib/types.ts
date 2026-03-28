@@ -125,6 +125,16 @@ export const StructureResumeRequestSchema = z.object({
 
 export type StructureResumeRequest = z.infer<typeof StructureResumeRequestSchema>
 
+export const StructuredResumeSaveRequestSchema = z.object({
+  structured_resume: StructuredResumeSchema,
+})
+
+export type StructuredResumeSaveRequest = z.infer<typeof StructuredResumeSaveRequestSchema>
+
+export interface StructuredResumeSaveErrorResponse {
+  error: string
+}
+
 export interface ExportPdfRequest {
   scan_id: string
   accepted_diff: RewriteDiffItem[]

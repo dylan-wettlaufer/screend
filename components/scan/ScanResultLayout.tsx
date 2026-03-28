@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useDebouncedStructuredResumeSave } from '@/lib/useDebouncedStructuredResumeSave'
 import { ScoreRing } from '@/components/scan/ScoreRing'
 import { SubScoreBar } from '@/components/scan/SubScoreBar'
 import { ScanResultTabs } from '@/components/scan/ScanResultTabs'
@@ -58,6 +59,29 @@ export function ScanResultLayout({
     setStructuredResume(initialStructuredResume)
   }, [scan.id, initialStructuredResume])
 
+  const { status: structuredSaveStatus, errorMessage: structuredSaveError } =
+    useDebouncedStructuredResumeSave(scan.id, structuredResume, initialStructuredResume)
+
+  const structuredSaveLabel =
+    structuredSaveStatus === 'pending'
+      ? 'Unsaved changes'
+      : structuredSaveStatus === 'saving'
+        ? 'Saving…'
+        : structuredSaveStatus === 'saved'
+          ? 'All changes saved'
+          : structuredSaveStatus === 'error'
+            ? (structuredSaveError ?? "Couldn't save")
+            : null
+
+  const structuredSaveColor =
+    structuredSaveStatus === 'error'
+      ? 'var(--color-danger)'
+      : structuredSaveStatus === 'pending'
+        ? 'var(--color-text-tertiary)'
+        : structuredSaveStatus === 'saved'
+          ? 'var(--color-success)'
+          : 'var(--color-text-secondary)'
+
   function handleFeedbackSelect(id: string | null) {
     setActiveFeedbackId((prev) => (prev === id ? null : id))
   }
@@ -102,6 +126,11 @@ export function ScanResultLayout({
               </span>
             )}
           </h1>
+          {structuredSaveLabel != null && (
+            <p className="font-mono text-xs mt-1" style={{ color: structuredSaveColor }}>
+              {structuredSaveLabel}
+            </p>
+          )}
         </div>
 
         {/* View toggle — desktop only */}
