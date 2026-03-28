@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { currentUser } from '@clerk/nextjs/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { parseResume, isAcceptedMimeType } from '@/lib/parsers'
-import { analyzeResume, analyzeResumeWithJD } from '@/lib/gemini'
-import type { AnalyzeResponse, AnalyzeErrorResponse, ScanMode } from '@/lib/types'
+import { analyzeResume, analyzeResumeWithJD, structureResume } from '@/lib/gemini'
+import type {
+  AnalyzeResponse,
+  AnalyzeErrorResponse,
+  ScanMode,
+  StructuredResume,
+} from '@/lib/types'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5 MB
 
@@ -162,6 +167,13 @@ export async function POST(
     return NextResponse.json({ error: 'Analysis failed, please try again.' }, { status: 500 })
   }
 
+  let structuredResumeJson: StructuredResume | null = null
+  try {
+    structuredResumeJson = await structureResume(resume_text)
+  } catch (err) {
+    console.error('[analyze] structureResume failed (scan will save without structured_resume_json):', err)
+  }
+
   const { error: insertError } = await supabase.from('scans').insert({
     id: scan_id,
     user_id: dbUser.id,
@@ -181,6 +193,7 @@ export async function POST(
     keywords_missing: aiResult.keywords_missing,
     jd_title: aiResult.jd_title,
     jd_company: aiResult.jd_company,
+    structured_resume_json: structuredResumeJson,
   })
 
   if (insertError) {

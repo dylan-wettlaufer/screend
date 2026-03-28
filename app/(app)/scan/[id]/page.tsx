@@ -2,7 +2,7 @@ import { currentUser } from '@clerk/nextjs/server'
 import { redirect, notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ScanResultLayout } from '@/components/scan/ScanResultLayout'
-import type { ScanRecord } from '@/lib/types'
+import { StructuredResumeSchema, type ScanRecord, type StructuredResume } from '@/lib/types'
 
 interface ScanResultPageProps {
   params: Promise<{ id: string }>
@@ -34,6 +34,15 @@ export default async function ScanResultPage({ params }: ScanResultPageProps) {
   if (!scan) notFound()
 
   const typedScan = scan as unknown as ScanRecord
+
+  const rawStructured = typedScan.structured_resume_json
+  let initialStructuredResume: StructuredResume | null = null
+  if (rawStructured != null && typeof rawStructured === 'object') {
+    const parsed = StructuredResumeSchema.safeParse(rawStructured)
+    if (parsed.success) {
+      initialStructuredResume = parsed.data
+    }
+  }
 
   if (typedScan.overall_score == null) {
     return (
@@ -71,6 +80,7 @@ export default async function ScanResultPage({ params }: ScanResultPageProps) {
     <main className="h-screen px-6 pt-6 pb-6" style={{ background: 'var(--color-bg-base)' }}>
       <ScanResultLayout
         scan={typedScan}
+        initialStructuredResume={initialStructuredResume}
         feedback={feedback}
         keywordsMatched={keywordsMatched}
         keywordsMissing={keywordsMissing}

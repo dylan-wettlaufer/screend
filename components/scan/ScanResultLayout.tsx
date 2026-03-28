@@ -25,6 +25,8 @@ const SUB_SCORES: {
 
 interface ScanResultLayoutProps {
   scan: ScanRecord
+  /** From DB structured_resume_json; no /api/structure on scan open */
+  initialStructuredResume: StructuredResume | null
   feedback: FeedbackItem[]
   keywordsMatched: string[]
   keywordsMissing: string[]
@@ -36,6 +38,7 @@ interface ScanResultLayoutProps {
 
 export function ScanResultLayout({
   scan,
+  initialStructuredResume,
   feedback,
   keywordsMatched,
   keywordsMissing,
@@ -46,44 +49,14 @@ export function ScanResultLayout({
 }: ScanResultLayoutProps) {
   const [activeFeedbackId, setActiveFeedbackId] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('split')
-  const [structuredResume, setStructuredResume] = useState<StructuredResume | null>(null)
+  const [structuredResume, setStructuredResume] = useState<StructuredResume | null>(
+    () => initialStructuredResume,
+  )
   const [workbenchTab, setWorkbenchTab] = useState<WorkbenchTab>('editor')
-  const [isStructureBootstrapLoading, setIsStructureBootstrapLoading] = useState(true)
 
   useEffect(() => {
-    setStructuredResume(null)
-    setIsStructureBootstrapLoading(true)
-    let cancelled = false
-
-    ;(async () => {
-      try {
-        const res = await fetch('/api/structure', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ scan_id: scan.id, accepted_diff: [] }),
-        })
-
-        if (cancelled) return
-
-        if (res.ok) {
-          const data = (await res.json()) as StructuredResume
-          if (!cancelled) {
-            setStructuredResume(data)
-          }
-        }
-      } catch {
-        // Left pane falls back to submitted PDF/text
-      } finally {
-        if (!cancelled) {
-          setIsStructureBootstrapLoading(false)
-        }
-      }
-    })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [scan.id])
+    setStructuredResume(initialStructuredResume)
+  }, [scan.id, initialStructuredResume])
 
   function handleFeedbackSelect(id: string | null) {
     setActiveFeedbackId((prev) => (prev === id ? null : id))
@@ -191,7 +164,7 @@ export function ScanResultLayout({
               keywordsMissing={keywordsMissing}
               activeFeedbackId={activeFeedbackId}
               structuredResume={structuredResume}
-              isBootstrappingStructure={isStructureBootstrapLoading}
+              isBootstrappingStructure={false}
               workbenchTab={workbenchTab}
               onWorkbenchTabChange={setWorkbenchTab}
               onStructuredResumeChange={setStructuredResume}

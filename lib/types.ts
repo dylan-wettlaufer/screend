@@ -162,4 +162,6 @@ export interface ScanRecord {
   jd_title: string | null
   jd_company: string | null
   created_at: string
+  /** Set at analyze time from structureResume(); null for legacy rows or parse failures */
+  structured_resume_json?: StructuredResume | null
 }
