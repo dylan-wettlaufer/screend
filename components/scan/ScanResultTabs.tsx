@@ -15,6 +15,8 @@ interface ScanResultTabsProps {
   onFeedbackSelect: (id: string | null) => void
   structuredResume: StructuredResume | null
   onStructuredResumeChange: (r: StructuredResume | null) => void
+  /** Called after accept / accept all so the workbench can show the editor. */
+  onSuggestionAccepted?: () => void
 }
 
 export function ScanResultTabs({
@@ -27,6 +29,7 @@ export function ScanResultTabs({
   onFeedbackSelect,
   structuredResume,
   onStructuredResumeChange,
+  onSuggestionAccepted,
 }: ScanResultTabsProps) {
   const [tab, setTab] = useState<'suggestions' | 'keywords'>('suggestions')
   const [accepted, setAccepted] = useState<Set<string>>(new Set())
@@ -34,6 +37,7 @@ export function ScanResultTabs({
 
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false)
   const [downloadPdfError, setDownloadPdfError] = useState<string | null>(null)
+  const [mergeNotice, setMergeNotice] = useState<string | null>(null)
 
   const tabs = [
     { id: 'suggestions' as const, label: 'Suggestions' },
@@ -41,10 +45,22 @@ export function ScanResultTabs({
   ]
 
   function mergeAcceptedIntoStructured(nextAccepted: Set<string>) {
-    if (structuredResume) {
-      onStructuredResumeChange(
-        applyAcceptedFeedbackToStructuredResume(structuredResume, feedback, nextAccepted),
-      )
+    if (!structuredResume) return
+
+    const { resume, unmatchedLineItemIds } = applyAcceptedFeedbackToStructuredResume(
+      structuredResume,
+      feedback,
+      nextAccepted,
+    )
+    onStructuredResumeChange(resume)
+    onSuggestionAccepted?.()
+
+    if (unmatchedLineItemIds.length === 0) {
+      setMergeNotice(null)
+    } else if (unmatchedLineItemIds.length === 1) {
+      setMergeNotice("Couldn't match this line in the editor — apply it manually.")
+    } else {
+      setMergeNotice("Some suggestions couldn't be matched in the editor — apply those manually.")
     }
   }
 
@@ -245,6 +261,11 @@ export function ScanResultTabs({
                 {!canExportPdf && (
                   <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
                     PDF export needs parsed resume data. Try re-running the scan if this persists.
+                  </p>
+                )}
+                {mergeNotice && (
+                  <p className="text-sm rounded-element border px-3 py-2" style={{ color: 'var(--color-warning)', borderColor: 'var(--color-border)' }}>
+                    {mergeNotice}
                   </p>
                 )}
                 {feedback.map((item) => (
