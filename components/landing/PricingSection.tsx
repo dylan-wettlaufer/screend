@@ -17,7 +17,7 @@ const plans = [
 const planFeatures = [
   "Unlimited scans.",
   "Job match mode.",
-  "Diff and export.",
+  "Accept, edit, and export PDF.",
 ];
 
 export function PricingSection() {

@@ -26,8 +26,7 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  const diffParsed = RewriteResultSchema.safeParse(body.accepted_diff)
-  if (!body.scan_id || !diffParsed.success) {
+  if (!body.scan_id) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
@@ -62,6 +61,10 @@ export async function POST(
     }
     structured = parsedResume.data
   } else {
+    const diffParsed = RewriteResultSchema.safeParse(body.accepted_diff ?? [])
+    if (!diffParsed.success) {
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+    }
     const { text: mergedText, skipped: mergeSkipped } = applyRewriteDiff(
       scan.resume_text as string,
       diffParsed.data,

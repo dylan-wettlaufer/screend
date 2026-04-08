@@ -1,16 +1,9 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import { FeedbackItem } from '@/components/scan/FeedbackItem'
-import { DiffView } from '@/components/scan/DiffView'
-import type {
-  FeedbackItem as FeedbackItemType,
-  RewriteDiffItem,
-  RewriteResponse,
-  RewriteErrorResponse,
-  ExportPdfErrorResponse,
-  StructuredResume,
-} from '@/lib/types'
+import { applyAcceptedFeedbackToStructuredResume } from '@/lib/applyAcceptedFeedbackToStructuredResume'
+import type { FeedbackItem as FeedbackItemType, ExportPdfErrorResponse, StructuredResume } from '@/lib/types'
 
 interface ScanResultTabsProps {
   feedback: FeedbackItemType[]
@@ -23,8 +16,6 @@ interface ScanResultTabsProps {
   structuredResume: StructuredResume | null
   onStructuredResumeChange: (r: StructuredResume | null) => void
 }
-
-type RewriteState = 'idle' | 'loading' | 'error' | 'done'
 
 export function ScanResultTabs({
   feedback,
@@ -41,49 +32,26 @@ export function ScanResultTabs({
   const [accepted, setAccepted] = useState<Set<string>>(new Set())
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
 
-  const [rewriteState, setRewriteState] = useState<RewriteState>('idle')
-  const [rewriteError, setRewriteError] = useState<string | null>(null)
-  const [diff, setDiff] = useState<RewriteDiffItem[]>([])
-
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false)
   const [downloadPdfError, setDownloadPdfError] = useState<string | null>(null)
-
-  const [isDownloadingDocx, setIsDownloadingDocx] = useState(false)
-  const [downloadDocxError, setDownloadDocxError] = useState<string | null>(null)
-
-  const structureDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  useEffect(() => {
-    return () => {
-      if (structureDebounceRef.current) clearTimeout(structureDebounceRef.current)
-    }
-  }, [])
-
-  const scheduleStructureRefetch = useCallback(
-    (acceptedDiff: RewriteDiffItem[]) => {
-      if (structureDebounceRef.current) clearTimeout(structureDebounceRef.current)
-      structureDebounceRef.current = setTimeout(async () => {
-        structureDebounceRef.current = null
-        const res = await fetch('/api/structure', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ scan_id: scanId, accepted_diff: acceptedDiff }),
-        })
-        if (res.ok) {
-          const next = (await res.json()) as StructuredResume
-          onStructuredResumeChange(next)
-        }
-      }, 350)
-    },
-    [scanId, onStructuredResumeChange],
-  )
 
   const tabs = [
     { id: 'suggestions' as const, label: 'Suggestions' },
     ...(isJobMatch ? [{ id: 'keywords' as const, label: 'Keywords' }] : []),
   ]
 
+  function mergeAcceptedIntoStructured(nextAccepted: Set<string>) {
+    if (structuredResume) {
+      onStructuredResumeChange(
+        applyAcceptedFeedbackToStructuredResume(structuredResume, feedback, nextAccepted),
+      )
+    }
+  }
+
   function handleAccept(id: string) {
-    setAccepted((prev) => new Set(prev).add(id))
+    const nextAccepted = new Set(accepted).add(id)
+    setAccepted(nextAccepted)
+    mergeAcceptedIntoStructured(nextAccepted)
   }
 
   function handleDismiss(id: string) {
@@ -105,51 +73,14 @@ export function ScanResultTabs({
 
   function handleAcceptAll() {
     const ids = feedback.filter((i) => !dismissed.has(i.id)).map((i) => i.id)
-    setAccepted(new Set(ids))
+    const nextAccepted = new Set(ids)
+    setAccepted(nextAccepted)
+    mergeAcceptedIntoStructured(nextAccepted)
   }
 
-  async function handleGenerate() {
-    setRewriteState('loading')
-    setRewriteError(null)
-    onStructuredResumeChange(null)
+  async function handleDownloadPdf() {
+    if (!structuredResume) return
 
-    try {
-      const res = await fetch('/api/rewrite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scan_id: scanId,
-          accepted_feedback_item_ids: Array.from(accepted),
-        }),
-      })
-
-      const data: RewriteResponse | RewriteErrorResponse = await res.json()
-
-      if (!res.ok) {
-        setRewriteError((data as RewriteErrorResponse).error ?? 'Something went wrong.')
-        setRewriteState('error')
-        return
-      }
-
-      const newDiff = (data as RewriteResponse).diff
-      setDiff(newDiff)
-      setRewriteState('done')
-
-      const structRes = await fetch('/api/structure', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scan_id: scanId, accepted_diff: newDiff }),
-      })
-      if (structRes.ok) {
-        onStructuredResumeChange((await structRes.json()) as StructuredResume)
-      }
-    } catch {
-      setRewriteError('Network error. Please try again.')
-      setRewriteState('error')
-    }
-  }
-
-  async function handleDownloadPdf(acceptedDiff: RewriteDiffItem[]) {
     setIsDownloadingPdf(true)
     setDownloadPdfError(null)
 
@@ -159,8 +90,7 @@ export function ScanResultTabs({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           scan_id: scanId,
-          accepted_diff: acceptedDiff,
-          ...(structuredResume != null ? { structured_resume: structuredResume } : {}),
+          structured_resume: structuredResume,
         }),
       })
 
@@ -184,41 +114,8 @@ export function ScanResultTabs({
     }
   }
 
-  async function handleDownloadDocx(acceptedDiff: RewriteDiffItem[]) {
-    setIsDownloadingDocx(true)
-    setDownloadDocxError(null)
-
-    try {
-      const res = await fetch('/api/export/docx', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scan_id: scanId, accepted_diff: acceptedDiff }),
-      })
-
-      if (!res.ok) {
-        const err = (await res.json()) as ExportPdfErrorResponse
-        setDownloadDocxError(err.error ?? 'Export failed.')
-        return
-      }
-
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'resume.docx'
-      a.click()
-      URL.revokeObjectURL(url)
-    } catch {
-      setDownloadDocxError('Network error. Please try again.')
-    } finally {
-      setIsDownloadingDocx(false)
-    }
-  }
-
   const acceptedCount = accepted.size
-  const canGenerate = acceptedCount > 0
-  const isGenerating = rewriteState === 'loading'
-  const isDone = rewriteState === 'done'
+  const canExportPdf = structuredResume != null
 
   return (
     <>
@@ -255,63 +152,86 @@ export function ScanResultTabs({
             </button>
           ))}
 
-          {tab === 'suggestions' && feedback.length > 0 && !isDone && (
-            <div className="ml-auto flex items-center gap-2">
-              <span
-                className="font-mono text-xs rounded-pill border px-2 py-0.5"
-                style={{
-                  color: acceptedCount > 0 ? 'var(--color-accent)' : 'var(--color-text-secondary)',
-                  borderColor: acceptedCount > 0 ? 'var(--color-accent-dim)' : 'var(--color-border)',
-                  background: acceptedCount > 0 ? 'var(--color-accent-muted)' : 'var(--color-bg-raised)',
-                }}
-              >
-                {acceptedCount > 0
-                  ? `${acceptedCount} accepted / ${feedback.length}`
-                  : `${feedback.length} items`}
-              </span>
+          <div className="ml-auto flex items-center gap-2">
+            {tab === 'suggestions' && feedback.length > 0 && (
+              <>
+                <span
+                  className="font-mono text-xs rounded-pill border px-2 py-0.5"
+                  style={{
+                    color: acceptedCount > 0 ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+                    borderColor: acceptedCount > 0 ? 'var(--color-accent-dim)' : 'var(--color-border)',
+                    background: acceptedCount > 0 ? 'var(--color-accent-muted)' : 'var(--color-bg-raised)',
+                  }}
+                >
+                  {acceptedCount > 0
+                    ? `${acceptedCount} accepted / ${feedback.length}`
+                    : `${feedback.length} items`}
+                </span>
 
-              <button
-                type="button"
-                onClick={handleAcceptAll}
-                className="font-mono text-xs rounded-pill border px-2.5 py-0.5 transition-colors"
-                style={{
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-text-secondary)',
-                  background: 'transparent',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--color-accent-dim)'
-                  e.currentTarget.style.color = 'var(--color-accent)'
-                  e.currentTarget.style.background = 'var(--color-accent-muted)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--color-border)'
-                  e.currentTarget.style.color = 'var(--color-text-secondary)'
-                  e.currentTarget.style.background = 'transparent'
-                }}
-              >
-                Accept all
-              </button>
-            </div>
-          )}
-        </div>
+                <button
+                  type="button"
+                  onClick={handleAcceptAll}
+                  className="font-mono text-xs rounded-pill border px-2.5 py-0.5 transition-colors"
+                  style={{
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-text-secondary)',
+                    background: 'transparent',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--color-accent-dim)'
+                    e.currentTarget.style.color = 'var(--color-accent)'
+                    e.currentTarget.style.background = 'var(--color-accent-muted)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--color-border)'
+                    e.currentTarget.style.color = 'var(--color-text-secondary)'
+                    e.currentTarget.style.background = 'transparent'
+                  }}
+                >
+                  Accept all
+                </button>
+              </>
+            )}
+
+            <button
+              type="button"
+              onClick={() => void handleDownloadPdf()}
+              disabled={!canExportPdf || isDownloadingPdf}
+              title={
+                !canExportPdf
+                  ? 'Resume editor data is not available for this scan.'
+                  : undefined
+              }
+              className="font-mono text-xs rounded-pill border px-2.5 py-0.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                borderColor: 'var(--color-accent-dim)',
+                color: 'var(--color-accent)',
+                background: 'var(--color-accent-muted)',
+              }}
+              onMouseEnter={(e) => {
+                if (!e.currentTarget.disabled) {
+                  e.currentTarget.style.borderColor = 'var(--color-accent)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--color-accent-dim)'
+              }}
+            >
+              {isDownloadingPdf ? 'Downloading…' : 'Download PDF'}
+            </button>
+          </div>
+      </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 pt-3">
+        {downloadPdfError && (
+          <p className="font-mono text-xs mb-3" style={{ color: 'var(--color-danger)' }}>
+            {downloadPdfError}
+          </p>
+        )}
         {/* Suggestions tab */}
         {tab === 'suggestions' && (
-          <div className={`flex flex-col gap-3 ${canGenerate && !isDone ? 'pb-24' : ''}`}>
-            {isDone ? (
-              <DiffView
-                diff={diff}
-                onDownloadPdf={handleDownloadPdf}
-                onDownloadDocx={handleDownloadDocx}
-                isDownloadingPdf={isDownloadingPdf}
-                downloadPdfError={downloadPdfError}
-                isDownloadingDocx={isDownloadingDocx}
-                downloadDocxError={downloadDocxError}
-                onAcceptedDiffChange={scheduleStructureRefetch}
-              />
-            ) : feedback.length === 0 ? (
+          <div className={`flex flex-col gap-3 ${feedback.length > 0 ? 'pb-6' : ''}`}>
+            {feedback.length === 0 ? (
               <div
                 className="rounded-card border px-5 py-8 text-center"
                 style={{ background: 'var(--color-bg-surface)', borderColor: 'var(--color-border)' }}
@@ -321,18 +241,25 @@ export function ScanResultTabs({
                 </p>
               </div>
             ) : (
-              feedback.map((item) => (
-                <FeedbackItem
-                  key={item.id}
-                  item={item}
-                  isAccepted={accepted.has(item.id)}
-                  isDismissed={dismissed.has(item.id)}
-                  isActive={activeFeedbackId === item.id}
-                  onAccept={() => handleAccept(item.id)}
-                  onDismiss={() => handleDismiss(item.id)}
-                  onSelect={() => onFeedbackSelect(item.id)}
-                />
-              ))
+              <>
+                {!canExportPdf && (
+                  <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                    PDF export needs parsed resume data. Try re-running the scan if this persists.
+                  </p>
+                )}
+                {feedback.map((item) => (
+                  <FeedbackItem
+                    key={item.id}
+                    item={item}
+                    isAccepted={accepted.has(item.id)}
+                    isDismissed={dismissed.has(item.id)}
+                    isActive={activeFeedbackId === item.id}
+                    onAccept={() => handleAccept(item.id)}
+                    onDismiss={() => handleDismiss(item.id)}
+                    onSelect={() => onFeedbackSelect(item.id)}
+                  />
+                ))}
+              </>
             )}
           </div>
         )}
@@ -427,41 +354,6 @@ export function ScanResultTabs({
         )}
         </div>
       </div>
-
-      {/* Sticky bottom bar */}
-      {canGenerate && !isDone && (
-        <div
-          className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 border-t"
-          style={{
-            background: 'var(--color-bg-surface)',
-            borderColor: 'var(--color-border)',
-          }}
-        >
-          <div className="flex flex-col gap-0.5">
-            <p className="font-mono text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-              <span style={{ color: 'var(--color-text-primary)' }}>{acceptedCount}</span>
-              {' '}suggestion{acceptedCount !== 1 ? 's' : ''} accepted
-            </p>
-            {rewriteState === 'error' && rewriteError && (
-              <p className="font-mono text-xs" style={{ color: 'var(--color-danger)' }}>
-                {rewriteError}
-              </p>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            className="rounded-element px-5 py-2 text-sm font-medium transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
-            style={{
-              background: 'var(--color-accent)',
-              color: 'var(--color-bg-base)',
-            }}
-          >
-            {isGenerating ? 'Generating…' : 'Generate new resume'}
-          </button>
-        </div>
-      )}
     </>
   )
 }

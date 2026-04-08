@@ -58,19 +58,6 @@ export type RewriteDiffItem = z.infer<typeof RewriteDiffItemSchema>
 
 export const RewriteResultSchema = z.array(RewriteDiffItemSchema)
 
-export interface RewriteRequest {
-  scan_id: string
-  accepted_feedback_item_ids: string[]
-}
-
-export interface RewriteResponse {
-  diff: RewriteDiffItem[]
-}
-
-export interface RewriteErrorResponse {
-  error: string
-}
-
 export const StructuredResumeSchema = z.object({
   name: z.string(),
   phone: z.string(),
@@ -118,13 +105,6 @@ export const StructuredResumeSchema = z.object({
 
 export type StructuredResume = z.infer<typeof StructuredResumeSchema>
 
-export const StructureResumeRequestSchema = z.object({
-  scan_id: z.string(),
-  accepted_diff: RewriteResultSchema,
-})
-
-export type StructureResumeRequest = z.infer<typeof StructureResumeRequestSchema>
-
 export const StructuredResumeSaveRequestSchema = z.object({
   structured_resume: StructuredResumeSchema,
 })
@@ -137,8 +117,9 @@ export interface StructuredResumeSaveErrorResponse {
 
 export interface ExportPdfRequest {
   scan_id: string
-  accepted_diff: RewriteDiffItem[]
-  /** When set, skips merge + AI structure; must match current Jake's template shape */
+  /** Required when `structured_resume` is omitted (legacy merge + AI structure path). */
+  accepted_diff?: RewriteDiffItem[]
+  /** When set, skips merge + AI structure; must match current template shape */
   structured_resume?: StructuredResume
 }
 

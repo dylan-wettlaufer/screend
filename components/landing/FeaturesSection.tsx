@@ -99,16 +99,16 @@ export function FeaturesSection() {
               </p>
             </div>
             <div className={cardBase}>
-              <p className="text-sm font-medium text-text-primary">Diff view before download</p>
+              <p className="text-sm font-medium text-text-primary">Workbench preview</p>
               <p className="mt-2 text-sm leading-6 text-text-secondary">
-                Preview every change before you commit to the export.
+                Edit structured fields and preview the layout before you export.
               </p>
             </div>
           </div>
 
           {/* Large right card */}
           <div className={`${cardBase} sm:col-span-2`}>
-            <p className="text-lg font-medium text-text-primary">Export to PDF or DOCX</p>
+            <p className="text-lg font-medium text-text-primary">Export to PDF</p>
             <p className="mt-2 text-sm leading-6 text-text-secondary">
               Download a clean, ATS-ready file the moment you&#39;re done reviewing. No formatting surprises, no layout drift.
             </p>

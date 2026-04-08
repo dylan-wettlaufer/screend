@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Screend — AI Resume Scans for Tech Jobs",
   description:
-    "Upload your resume, get scored feedback for tech roles, accept line-level improvements, review a diff, and export a polished PDF or DOCX.",
+    "Upload your resume, get scored feedback for tech roles, accept line-level improvements, edit in the workbench, and export a polished PDF.",
 };
 
 export default function RootLayout({

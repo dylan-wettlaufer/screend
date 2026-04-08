@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 
-const pills = ["ATS-friendly", "Tech keyword focus", "Line-level edits", "Export PDF or DOCX"];
+const pills = ["ATS-friendly", "Tech keyword focus", "Line-level edits", "Export PDF"];
 
 export function SocialProofSection() {
   return (

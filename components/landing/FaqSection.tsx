@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 const faqs = [
   {
     q: "Will Screend rewrite my entire resume?",
-    a: "No. The core flow is line-level suggestions that you can accept or dismiss, then a rewrite that only applies accepted items.",
+    a: "No. You get line-level suggestions you can accept or dismiss; accepted text merges into your structured resume, then you export a PDF.",
   },
   {
     q: "Is there a free tier?",

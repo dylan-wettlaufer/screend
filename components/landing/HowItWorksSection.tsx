@@ -17,10 +17,10 @@ const steps = [
   },
   {
     number: "03",
-    title: "Preview a diff, then export",
+    title: "Edit in the workbench, export PDF",
     description: [
-      "Generate an updated resume, undo any change,",
-      "then download PDF or DOCX.",
+      "Accepted suggestions merge into your structured resume.",
+      "Tweak in the editor, then download a PDF.",
     ],
   },
 ];

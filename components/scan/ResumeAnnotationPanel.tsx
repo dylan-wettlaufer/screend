@@ -16,7 +16,7 @@ interface ResumeAnnotationPanelProps {
   keywordsMissing: string[]
   activeFeedbackId: string | null
   structuredResume: StructuredResume | null
-  /** True while initial POST /api/structure runs on scan load */
+  /** Reserved for a future loading state when structured resume is fetched async */
   isBootstrappingStructure?: boolean
   workbenchTab: WorkbenchTab
   onWorkbenchTabChange: (tab: WorkbenchTab) => void

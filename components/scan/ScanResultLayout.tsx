@@ -26,7 +26,7 @@ const SUB_SCORES: {
 
 interface ScanResultLayoutProps {
   scan: ScanRecord
-  /** From DB structured_resume_json; no /api/structure on scan open */
+  /** From DB structured_resume_json */
   initialStructuredResume: StructuredResume | null
   feedback: FeedbackItem[]
   keywordsMatched: string[]
