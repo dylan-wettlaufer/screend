@@ -254,7 +254,6 @@ export function ScanResultLayout({
                 onFeedbackSelect={handleFeedbackSelect}
                 structuredResume={structuredResume}
                 onStructuredResumeChange={setStructuredResume}
-                onSuggestionAccepted={() => setWorkbenchTab('editor')}
               />
             </div>
           </section>

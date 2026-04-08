@@ -15,8 +15,6 @@ interface ScanResultTabsProps {
   onFeedbackSelect: (id: string | null) => void
   structuredResume: StructuredResume | null
   onStructuredResumeChange: (r: StructuredResume | null) => void
-  /** Called after accept / accept all so the workbench can show the editor. */
-  onSuggestionAccepted?: () => void
 }
 
 export function ScanResultTabs({
@@ -29,7 +27,6 @@ export function ScanResultTabs({
   onFeedbackSelect,
   structuredResume,
   onStructuredResumeChange,
-  onSuggestionAccepted,
 }: ScanResultTabsProps) {
   const [tab, setTab] = useState<'suggestions' | 'keywords'>('suggestions')
   const [accepted, setAccepted] = useState<Set<string>>(new Set())
@@ -53,7 +50,6 @@ export function ScanResultTabs({
       nextAccepted,
     )
     onStructuredResumeChange(resume)
-    onSuggestionAccepted?.()
 
     if (unmatchedLineItemIds.length === 0) {
       setMergeNotice(null)
