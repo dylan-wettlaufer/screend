@@ -21,6 +21,7 @@ const severityStyles: Record<FeedbackItemType['severity'], { dot: string; label:
 export function FeedbackItem({ item, isAccepted, isDismissed, isActive, onAccept, onDismiss, onSelect }: FeedbackItemProps) {
   const { dot, label: severityLabel } = severityStyles[item.severity]
   const hasDiff = !!(item.original_line && item.suggested_line)
+  const reasoningText = item.reasoning?.trim() ?? ''
 
   // Dismissed state — collapsed single row
   if (isDismissed) {
@@ -102,6 +103,22 @@ export function FeedbackItem({ item, isAccepted, isDismissed, isActive, onAccept
       </div>
 
       <div className="flex flex-col gap-1.5">
+        {reasoningText ? (
+          <div className="flex flex-col gap-0.5">
+            <p
+              className="font-mono text-xs leading-snug"
+              style={{ color: 'var(--color-text-tertiary)' }}
+            >
+              Why this matters
+            </p>
+            <p
+              className="text-sm leading-relaxed"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              {reasoningText}
+            </p>
+          </div>
+        ) : null}
         <p
           className="text-sm leading-relaxed"
           style={{ color: 'var(--color-text-secondary)' }}

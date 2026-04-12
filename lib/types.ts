@@ -16,6 +16,7 @@ export const FeedbackItemSchema = z.object({
   section: z.string(),
   title: z.string(),
   description: z.string(),
+  reasoning: z.string().optional(),
   original_line: z.string().nullable(),
   suggested_line: z.string().nullable(),
 })
