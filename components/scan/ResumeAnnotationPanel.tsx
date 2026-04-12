@@ -4,7 +4,7 @@ import { useRef, useEffect, useMemo } from 'react'
 import { PdfAnnotationViewer } from '@/components/scan/PdfAnnotationViewer'
 import { ResumeStructuredEditor } from '@/components/scan/ResumeStructuredEditor'
 import { JakesResumePreview } from '@/components/scan/jakesResumePreview/JakesResumePreview'
-import type { FeedbackItem, StructuredResume } from '@/lib/types'
+import type { FeedbackItem, StructuredResume, SectionDiagnosticKey } from '@/lib/types'
 
 export type WorkbenchTab = 'submitted' | 'editor' | 'preview'
 
@@ -21,6 +21,11 @@ interface ResumeAnnotationPanelProps {
   workbenchTab: WorkbenchTab
   onWorkbenchTabChange: (tab: WorkbenchTab) => void
   onStructuredResumeChange: (next: StructuredResume) => void
+  /** Scroll editor to this section (structured resume fieldset ids) */
+  scrollSectionKey?: SectionDiagnosticKey | null
+  flashFieldPath?: string | null
+  /** Increment to re-run flash on the same path */
+  flashFieldNonce?: number
 }
 
 // ── Text-fallback helpers (used when no PDF is available) ──────────────────
@@ -115,10 +120,21 @@ export function ResumeAnnotationPanel({
   workbenchTab,
   onWorkbenchTabChange,
   onStructuredResumeChange,
+  scrollSectionKey = null,
+  flashFieldPath = null,
+  flashFieldNonce = 0,
 }: ResumeAnnotationPanelProps) {
   const isPdfMode = resumeIsPdf && !!resumeSignedUrl
   const showWorkbench = structuredResume !== null
   const showWorkbenchChrome = showWorkbench || isBootstrappingStructure
+
+  useEffect(() => {
+    if (!scrollSectionKey) return
+    const id = `resume-section-${scrollSectionKey}`
+    const el = document.getElementById(id)
+    if (!el) return
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [scrollSectionKey])
 
   return (
     <>
@@ -209,6 +225,8 @@ export function ResumeAnnotationPanel({
               <ResumeStructuredEditor
                 value={structuredResume!}
                 onChange={onStructuredResumeChange}
+                flashFieldPath={flashFieldPath}
+                flashFieldNonce={flashFieldNonce}
               />
             ) : (
               <JakesResumePreview resume={structuredResume!} />

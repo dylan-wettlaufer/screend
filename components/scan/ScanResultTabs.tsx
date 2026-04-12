@@ -3,11 +3,13 @@
 import { useState } from 'react'
 import { ResumeAuditSidebar } from '@/components/scan/ResumeAuditSidebar'
 import { applyAcceptedFeedbackToStructuredResume } from '@/lib/applyAcceptedFeedbackToStructuredResume'
+import { findFirstStructuredResumeFieldPath } from '@/lib/structuredResumeDiff'
 import type {
   FeedbackItem as FeedbackItemType,
   ExportPdfErrorResponse,
   SectionDiagnostics,
   StructuredResume,
+  SectionDiagnosticKey,
 } from '@/lib/types'
 
 interface ScanResultTabsProps {
@@ -21,6 +23,9 @@ interface ScanResultTabsProps {
   onFeedbackSelect: (id: string | null) => void
   structuredResume: StructuredResume | null
   onStructuredResumeChange: (r: StructuredResume | null) => void
+  selectedSection: SectionDiagnosticKey | null
+  onSectionSelect: (key: SectionDiagnosticKey | null) => void
+  onJdFeedbackSynced?: (item: FeedbackItemType, fieldPath: string | null) => void
 }
 
 export function ScanResultTabs({
@@ -34,6 +39,9 @@ export function ScanResultTabs({
   onFeedbackSelect,
   structuredResume,
   onStructuredResumeChange,
+  selectedSection,
+  onSectionSelect,
+  onJdFeedbackSynced,
 }: ScanResultTabsProps) {
   const [tab, setTab] = useState<'suggestions' | 'keywords'>('suggestions')
   const [accepted, setAccepted] = useState<Set<string>>(new Set())
@@ -44,20 +52,14 @@ export function ScanResultTabs({
   const [mergeNotice, setMergeNotice] = useState<string | null>(null)
 
   const tabs = [
-    { id: 'suggestions' as const, label: 'Suggestions' },
+    {
+      id: 'suggestions' as const,
+      label: isJobMatch ? 'Alignment actions' : 'Suggestions',
+    },
     ...(isJobMatch ? [{ id: 'keywords' as const, label: 'Keywords' }] : []),
   ]
 
-  function mergeAcceptedIntoStructured(nextAccepted: Set<string>) {
-    if (!structuredResume) return
-
-    const { resume, unmatchedLineItemIds } = applyAcceptedFeedbackToStructuredResume(
-      structuredResume,
-      feedback,
-      nextAccepted,
-    )
-    onStructuredResumeChange(resume)
-
+  function setMergeNoticeFromUnmatched(unmatchedLineItemIds: string[]) {
     if (unmatchedLineItemIds.length === 0) {
       setMergeNotice(null)
     } else if (unmatchedLineItemIds.length === 1) {
@@ -70,7 +72,29 @@ export function ScanResultTabs({
   function handleAccept(id: string) {
     const nextAccepted = new Set(accepted).add(id)
     setAccepted(nextAccepted)
-    mergeAcceptedIntoStructured(nextAccepted)
+    if (!structuredResume) return
+
+    const before = structuredResume
+    const item = feedback.find((i) => i.id === id)
+    const { resume, unmatchedLineItemIds } = applyAcceptedFeedbackToStructuredResume(
+      before,
+      feedback,
+      nextAccepted,
+    )
+    onStructuredResumeChange(resume)
+    setMergeNoticeFromUnmatched(unmatchedLineItemIds)
+
+    if (
+      isJobMatch &&
+      onJdFeedbackSynced &&
+      item &&
+      item.original_line &&
+      item.suggested_line &&
+      !unmatchedLineItemIds.includes(id)
+    ) {
+      const path = findFirstStructuredResumeFieldPath(before, resume)
+      onJdFeedbackSynced(item, path)
+    }
   }
 
   function handleDismiss(id: string) {
@@ -94,7 +118,28 @@ export function ScanResultTabs({
     const ids = feedback.filter((i) => !dismissed.has(i.id)).map((i) => i.id)
     const nextAccepted = new Set(ids)
     setAccepted(nextAccepted)
-    mergeAcceptedIntoStructured(nextAccepted)
+    if (!structuredResume) return
+
+    const before = structuredResume
+    const { resume, unmatchedLineItemIds } = applyAcceptedFeedbackToStructuredResume(
+      before,
+      feedback,
+      nextAccepted,
+    )
+    onStructuredResumeChange(resume)
+    setMergeNoticeFromUnmatched(unmatchedLineItemIds)
+
+    if (isJobMatch && onJdFeedbackSynced) {
+      const path = findFirstStructuredResumeFieldPath(before, resume)
+      let first = true
+      for (const item of feedback) {
+        if (!nextAccepted.has(item.id)) continue
+        if (!item.original_line || !item.suggested_line) continue
+        if (unmatchedLineItemIds.includes(item.id)) continue
+        onJdFeedbackSynced(item, first ? path : null)
+        first = false
+      }
+    }
   }
 
   async function handleDownloadPdf() {
@@ -183,7 +228,9 @@ export function ScanResultTabs({
                   }}
                 >
                   {acceptedCount > 0
-                    ? `${acceptedCount} accepted / ${feedback.length}`
+                    ? isJobMatch
+                      ? `${acceptedCount} synced / ${feedback.length}`
+                      : `${acceptedCount} accepted / ${feedback.length}`
                     : `${feedback.length} items`}
                 </span>
 
@@ -207,7 +254,7 @@ export function ScanResultTabs({
                     e.currentTarget.style.background = 'transparent'
                   }}
                 >
-                  Accept all
+                  {isJobMatch ? 'Sync all to JD' : 'Accept all'}
                 </button>
               </>
             )}
@@ -252,14 +299,18 @@ export function ScanResultTabs({
         )}
         {/* Suggestions tab */}
         {tab === 'suggestions' && (
-          <div className={`flex flex-col gap-3 ${feedback.length > 0 ? 'pb-6' : ''}`}>
+          <div
+            className={`flex flex-col min-h-0 flex-1 gap-3 ${feedback.length > 0 ? 'pb-6' : ''}`}
+          >
             {feedback.length === 0 ? (
               <div
                 className="rounded-card border px-5 py-8 text-center"
                 style={{ background: 'var(--color-bg-surface)', borderColor: 'var(--color-border)' }}
               >
                 <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                  No suggestions — your resume looks great.
+                  {isJobMatch
+                    ? 'No alignment actions — your resume already matches this JD closely.'
+                    : 'No suggestions — your resume looks great.'}
                 </p>
               </div>
             ) : (
@@ -283,6 +334,9 @@ export function ScanResultTabs({
                   onAccept={handleAccept}
                   onDismiss={handleDismiss}
                   onFeedbackSelect={onFeedbackSelect}
+                  isJobMatch={isJobMatch}
+                  selectedSection={selectedSection}
+                  onSectionSelect={onSectionSelect}
                 />
               </>
             )}

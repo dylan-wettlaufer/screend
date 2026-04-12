@@ -18,6 +18,11 @@ import {
   type SectionDiagnosticKey,
 } from '@/lib/types'
 
+const JD_SKY = '#0ea5e9'
+const JD_INDIGO = '#6366f1'
+const JD_FG = '#f8fafc'
+const JD_MUTED = '#94a3b8'
+
 export type AuditSectionKey = SectionDiagnosticKey
 
 const LEGACY_SECTIONS: { key: AuditSectionKey; label: string }[] = SECTION_DIAGNOSTIC_KEYS.map((key) => ({
@@ -93,6 +98,10 @@ export interface ResumeAuditSidebarProps {
   onDismiss: (id: string) => void
   onFeedbackSelect: (id: string | null) => void
   accordionMultiple?: boolean
+  /** Job match: JD Alignment Engine copy, rail filter, theme */
+  isJobMatch?: boolean
+  selectedSection?: SectionDiagnosticKey | null
+  onSectionSelect?: (key: SectionDiagnosticKey | null) => void
 }
 
 function severityDotClass(severity: FeedbackItemType['severity']): string {
@@ -112,54 +121,80 @@ function LineDiffViewer({
   originalLine,
   suggestedLine,
   isAccepted,
+  jdTheme,
 }: {
   originalLine: string | null
   suggestedLine: string
   isAccepted: boolean
+  jdTheme?: boolean
 }) {
+  const border = jdTheme
+    ? isAccepted
+      ? 'rgba(14, 165, 233, 0.45)'
+      : 'rgba(14, 165, 233, 0.22)'
+    : isAccepted
+      ? 'var(--color-accent-dim)'
+      : 'var(--color-border)'
+  const beforeBg = jdTheme ? 'rgba(15, 23, 42, 0.9)' : 'var(--color-bg-hover)'
+  const afterBg = jdTheme ? 'rgba(14, 165, 233, 0.08)' : 'var(--color-accent-muted)'
+  const del = jdTheme ? '#f87171' : 'var(--color-danger)'
+  const add = jdTheme ? JD_SKY : 'var(--color-accent)'
+  const hasOrig = !!(originalLine && originalLine.trim())
+
   return (
     <div
-      className="flex flex-col gap-1.5 rounded-element overflow-hidden border font-mono text-xs leading-relaxed"
-      style={{
-        borderColor: isAccepted ? 'var(--color-accent-dim)' : 'var(--color-border)',
-      }}
+      className="grid grid-cols-1 sm:grid-cols-2 gap-0 rounded-element overflow-hidden border font-mono text-xs leading-relaxed"
+      style={{ borderColor: border }}
     >
-      {originalLine ? (
-        <div className="px-3 py-2 flex gap-2 items-start" style={{ background: 'var(--color-bg-hover)' }}>
-          <span className="shrink-0 mt-0.5" style={{ color: 'var(--color-danger)' }}>
-            −
+      {hasOrig ? (
+        <div
+          className="px-3 py-2.5 flex flex-col gap-1 border-b sm:border-b-0 sm:border-r"
+          style={{
+            background: beforeBg,
+            borderColor: jdTheme ? 'rgba(99, 102, 241, 0.15)' : 'var(--color-border)',
+          }}
+        >
+          <span className="text-[10px] tracking-wide" style={{ color: jdTheme ? JD_MUTED : 'var(--color-text-tertiary)' }}>
+            Before
           </span>
-          <p className="flex-1 line-through" style={{ color: 'var(--color-danger)' }}>
+          <p className="line-through" style={{ color: del }}>
             {originalLine}
           </p>
         </div>
       ) : null}
-      <div className="px-3 py-2 flex gap-2 items-start" style={{ background: 'var(--color-accent-muted)' }}>
-        <span className="shrink-0 mt-0.5" style={{ color: 'var(--color-accent)' }}>
-          +
+      <div
+        className={cn('px-3 py-2.5 flex flex-col gap-1', !hasOrig && 'sm:col-span-2')}
+        style={{ background: afterBg }}
+      >
+        <span className="text-[10px] tracking-wide" style={{ color: jdTheme ? JD_MUTED : 'var(--color-text-tertiary)' }}>
+          After
         </span>
-        <p className="flex-1" style={{ color: 'var(--color-accent)' }}>
-          {suggestedLine}
-        </p>
+        <p style={{ color: add }}>{suggestedLine}</p>
       </div>
     </div>
   )
 }
 
-function WhyThisMattersToggle({
+function BridgeGapToggle({
   reasoningText,
+  descriptionText,
   open,
   onToggle,
   stopCardClick,
+  jdTheme,
 }: {
   reasoningText: string
+  descriptionText: string
   open: boolean
   onToggle: () => void
   stopCardClick: (e: MouseEvent | KeyboardEvent) => void
+  jdTheme?: boolean
 }) {
-  if (!reasoningText) return null
+  if (!reasoningText.trim() && !descriptionText.trim()) return null
+  const labelColor = jdTheme ? JD_MUTED : 'var(--color-text-tertiary)'
+  const bodyColor = jdTheme ? '#cbd5e1' : 'var(--color-text-secondary)'
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <button
         type="button"
         onClick={(e) => {
@@ -167,19 +202,24 @@ function WhyThisMattersToggle({
           onToggle()
         }}
         className="flex items-center gap-1.5 text-left font-mono text-xs outline-none rounded-element py-1 -my-1 w-fit"
-        style={{ color: 'var(--color-text-tertiary)' }}
+        style={{ color: labelColor }}
         aria-expanded={open}
       >
         <ChevronDown
           className={cn('size-3.5 shrink-0 transition-transform', open && 'rotate-180')}
           aria-hidden
         />
-        Why this matters
+        Why this bridges the gap
       </button>
       {open ? (
-        <p className="text-sm leading-relaxed pl-5" style={{ color: 'var(--color-text-secondary)' }}>
-          {reasoningText}
-        </p>
+        <div className="text-sm leading-relaxed pl-5 flex flex-col gap-2 border-l" style={{ borderColor: jdTheme ? 'rgba(14, 165, 233, 0.25)' : 'var(--color-border)' }}>
+          {descriptionText.trim() ? (
+            <p style={{ color: bodyColor }}>{descriptionText}</p>
+          ) : null}
+          {reasoningText.trim() ? (
+            <p style={{ color: bodyColor }}>{reasoningText}</p>
+          ) : null}
+        </div>
       ) : null}
     </div>
   )
@@ -193,6 +233,8 @@ function SectionImprovementForgeCard({
   onAccept,
   onDismiss,
   onSelect,
+  jdTheme,
+  acceptLabel,
 }: {
   item: SectionImprovement
   isAccepted: boolean
@@ -201,11 +243,14 @@ function SectionImprovementForgeCard({
   onAccept: () => void
   onDismiss: () => void
   onSelect: () => void
+  jdTheme?: boolean
+  acceptLabel: string
 }) {
   const [reasoningOpen, setReasoningOpen] = useState(false)
   const dot = severityDotClass(item.severity)
   const reasoningText = item.reasoning?.trim() ?? ''
   const suggested = item.suggested_line?.trim() ?? ''
+  const alignmentTarget = item.alignment_target?.trim() ?? ''
 
   if (isDismissed) {
     return (
@@ -248,50 +293,67 @@ function SectionImprovementForgeCard({
       onKeyDown={(e) => e.key === 'Enter' && onSelect()}
       className="rounded-card border p-4 flex flex-col gap-3 transition-colors cursor-pointer outline-none"
       style={{
-        background: 'var(--color-bg-raised)',
-        borderColor: isActive
-          ? 'var(--color-accent)'
-          : isAccepted
-            ? 'var(--color-border-strong)'
-            : 'var(--color-accent-dim)',
+        background: jdTheme ? 'rgba(15, 23, 42, 0.55)' : 'var(--color-bg-raised)',
+        borderColor: jdTheme
+          ? isActive
+            ? JD_SKY
+            : isAccepted
+              ? 'rgba(99, 102, 241, 0.35)'
+              : 'rgba(14, 165, 233, 0.28)'
+          : isActive
+            ? 'var(--color-accent)'
+            : isAccepted
+              ? 'var(--color-border-strong)'
+              : 'var(--color-accent-dim)',
+        boxShadow: jdTheme ? '0 0 20px rgba(14, 165, 233, 0.06)' : undefined,
       }}
     >
-      <p className="font-mono text-[10px] tracking-wide" style={{ color: 'var(--color-accent)' }}>
-        Forge
+      <p
+        className="font-mono text-[10px] tracking-wide"
+        style={{ color: jdTheme ? JD_INDIGO : 'var(--color-accent)' }}
+      >
+        JD bridge
       </p>
+      {alignmentTarget ? (
+        <p className="font-mono text-[11px] leading-snug" style={{ color: jdTheme ? JD_SKY : 'var(--color-accent)' }}>
+          {alignmentTarget}
+        </p>
+      ) : null}
       <div className="flex items-start gap-2.5">
         <div className="mt-1 shrink-0">
           <div className="h-2 w-2 rounded-full" style={{ background: dot }} aria-hidden />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium leading-snug" style={{ color: 'var(--color-text-primary)' }}>
+          <p
+            className="text-sm font-medium leading-snug"
+            style={{ color: jdTheme ? JD_FG : 'var(--color-text-primary)' }}
+          >
             {item.title}
           </p>
         </div>
       </div>
 
-      <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-        {item.description}
-      </p>
-
-      <WhyThisMattersToggle
-        reasoningText={reasoningText}
-        open={reasoningOpen}
-        onToggle={() => setReasoningOpen((o) => !o)}
-        stopCardClick={(e) => e.stopPropagation()}
-      />
-
       <LineDiffViewer
         originalLine={item.original_line}
         suggestedLine={suggested}
         isAccepted={isAccepted}
+        jdTheme={jdTheme}
+      />
+
+      <BridgeGapToggle
+        reasoningText={reasoningText}
+        descriptionText={item.description}
+        open={reasoningOpen}
+        onToggle={() => setReasoningOpen((o) => !o)}
+        stopCardClick={(e) => e.stopPropagation()}
+        jdTheme={jdTheme}
       />
 
       <div className="flex items-center gap-2 pt-0.5">
         {isAccepted ? (
           <span
             className="flex items-center gap-1.5 font-mono text-xs"
-            style={{ color: 'var(--color-accent)' }}
+            style={{ color: jdTheme ? JD_SKY : 'var(--color-accent)' }}
           >
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
               <path
@@ -302,7 +364,7 @@ function SectionImprovementForgeCard({
                 strokeLinejoin="round"
               />
             </svg>
-            accepted
+            synced
           </span>
         ) : (
           <>
@@ -314,18 +376,20 @@ function SectionImprovementForgeCard({
               }}
               className="rounded-element border px-3 py-1 font-mono text-xs transition-colors"
               style={{
-                borderColor: 'var(--color-accent-dim)',
-                color: 'var(--color-accent)',
-                background: 'transparent',
+                borderColor: jdTheme ? 'rgba(14, 165, 233, 0.45)' : 'var(--color-accent-dim)',
+                color: jdTheme ? JD_SKY : 'var(--color-accent)',
+                background: jdTheme ? 'rgba(14, 165, 233, 0.08)' : 'transparent',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'var(--color-accent-muted)'
+                e.currentTarget.style.background = jdTheme
+                  ? 'rgba(14, 165, 233, 0.15)'
+                  : 'var(--color-accent-muted)'
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent'
+                e.currentTarget.style.background = jdTheme ? 'rgba(14, 165, 233, 0.08)' : 'transparent'
               }}
             >
-              Accept change
+              {acceptLabel}
             </button>
             <button
               type="button"
@@ -335,8 +399,8 @@ function SectionImprovementForgeCard({
               }}
               className="rounded-element border px-3 py-1 font-mono text-xs transition-colors"
               style={{
-                borderColor: 'var(--color-border)',
-                color: 'var(--color-text-secondary)',
+                borderColor: jdTheme ? 'rgba(148, 163, 184, 0.25)' : 'var(--color-border)',
+                color: jdTheme ? JD_MUTED : 'var(--color-text-secondary)',
                 background: 'transparent',
               }}
               onMouseEnter={(e) => {
@@ -344,8 +408,8 @@ function SectionImprovementForgeCard({
                 e.currentTarget.style.color = 'var(--color-danger)'
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--color-border)'
-                e.currentTarget.style.color = 'var(--color-text-secondary)'
+                e.currentTarget.style.borderColor = jdTheme ? 'rgba(148, 163, 184, 0.25)' : 'var(--color-border)'
+                e.currentTarget.style.color = jdTheme ? JD_MUTED : 'var(--color-text-secondary)'
               }}
             >
               Dismiss
@@ -363,16 +427,19 @@ function SectionImprovementStrategicTipCard({
   isActive,
   onDismiss,
   onSelect,
+  jdTheme,
 }: {
   item: SectionImprovement
   isDismissed: boolean
   isActive: boolean
   onDismiss: () => void
   onSelect: () => void
+  jdTheme?: boolean
 }) {
   const [reasoningOpen, setReasoningOpen] = useState(false)
   const dot = severityDotClass(item.severity)
   const reasoningText = item.reasoning?.trim() ?? ''
+  const alignmentTarget = item.alignment_target?.trim() ?? ''
 
   if (isDismissed) {
     return (
@@ -415,33 +482,49 @@ function SectionImprovementStrategicTipCard({
       onKeyDown={(e) => e.key === 'Enter' && onSelect()}
       className="rounded-card border p-4 flex flex-col gap-3 transition-colors cursor-pointer outline-none"
       style={{
-        background: 'var(--color-bg-surface)',
-        borderColor: isActive ? 'var(--color-accent)' : 'var(--color-border)',
+        background: jdTheme ? 'rgba(15, 23, 42, 0.45)' : 'var(--color-bg-surface)',
+        borderColor: jdTheme
+          ? isActive
+            ? JD_SKY
+            : 'rgba(14, 165, 233, 0.2)'
+          : isActive
+            ? 'var(--color-accent)'
+            : 'var(--color-border)',
+        boxShadow: jdTheme ? '0 0 16px rgba(99, 102, 241, 0.05)' : undefined,
       }}
     >
-      <p className="font-mono text-[10px] tracking-wide" style={{ color: 'var(--color-text-secondary)' }}>
-        Strategic tip
+      <p
+        className="font-mono text-[10px] tracking-wide"
+        style={{ color: jdTheme ? JD_MUTED : 'var(--color-text-secondary)' }}
+      >
+        {jdTheme ? 'Alignment tip' : 'Strategic tip'}
       </p>
+      {alignmentTarget ? (
+        <p className="font-mono text-[11px] leading-snug" style={{ color: jdTheme ? JD_SKY : 'var(--color-accent)' }}>
+          {alignmentTarget}
+        </p>
+      ) : null}
       <div className="flex items-start gap-2.5">
         <div className="mt-1 shrink-0">
           <div className="h-2 w-2 rounded-full" style={{ background: dot }} aria-hidden />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium leading-snug" style={{ color: 'var(--color-text-primary)' }}>
+          <p
+            className="text-sm font-medium leading-snug"
+            style={{ color: jdTheme ? JD_FG : 'var(--color-text-primary)' }}
+          >
             {item.title}
           </p>
         </div>
       </div>
 
-      <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-        {item.description}
-      </p>
-
-      <WhyThisMattersToggle
+      <BridgeGapToggle
         reasoningText={reasoningText}
+        descriptionText={item.description}
         open={reasoningOpen}
         onToggle={() => setReasoningOpen((o) => !o)}
         stopCardClick={(e) => e.stopPropagation()}
+        jdTheme={jdTheme}
       />
 
       <div className="flex items-center gap-2 pt-0.5">
@@ -481,6 +564,8 @@ function LegacyAuditFeedbackCard({
   onAccept,
   onDismiss,
   onSelect,
+  jdTheme,
+  acceptLabel,
 }: {
   item: FeedbackItemType
   isAccepted: boolean
@@ -489,11 +574,14 @@ function LegacyAuditFeedbackCard({
   onAccept: () => void
   onDismiss: () => void
   onSelect: () => void
+  jdTheme?: boolean
+  acceptLabel: string
 }) {
   const [reasoningOpen, setReasoningOpen] = useState(false)
   const dot = severityDotClass(item.severity)
-  const hasDiff = !!(item.original_line && item.suggested_line)
+  const hasSuggested = !!(item.suggested_line && item.suggested_line.trim() !== '')
   const reasoningText = item.reasoning?.trim() ?? ''
+  const alignmentTarget = item.alignment_target?.trim() ?? ''
 
   if (isDismissed) {
     return (
@@ -536,14 +624,25 @@ function LegacyAuditFeedbackCard({
       onKeyDown={(e) => e.key === 'Enter' && onSelect()}
       className="rounded-card border p-4 flex flex-col gap-3 transition-colors cursor-pointer outline-none"
       style={{
-        background: 'var(--color-bg-surface)',
-        borderColor: isActive
-          ? 'var(--color-accent)'
-          : isAccepted
-            ? 'var(--color-border-strong)'
-            : 'var(--color-border)',
+        background: jdTheme ? 'rgba(15, 23, 42, 0.45)' : 'var(--color-bg-surface)',
+        borderColor: jdTheme
+          ? isActive
+            ? JD_SKY
+            : isAccepted
+              ? 'rgba(99, 102, 241, 0.35)'
+              : 'rgba(14, 165, 233, 0.2)'
+          : isActive
+            ? 'var(--color-accent)'
+            : isAccepted
+              ? 'var(--color-border-strong)'
+              : 'var(--color-border)',
       }}
     >
+      {alignmentTarget ? (
+        <p className="font-mono text-[11px] leading-snug" style={{ color: jdTheme ? JD_SKY : 'var(--color-accent)' }}>
+          {alignmentTarget}
+        </p>
+      ) : null}
       <div className="flex items-start gap-2.5">
         <div className="mt-1 shrink-0">
           <div className="h-2 w-2 rounded-full" style={{ background: dot }} aria-hidden />
@@ -551,37 +650,36 @@ function LegacyAuditFeedbackCard({
         <div className="flex-1 min-w-0">
           <p
             className="text-sm font-medium leading-snug"
-            style={{ color: 'var(--color-text-primary)' }}
+            style={{ color: jdTheme ? JD_FG : 'var(--color-text-primary)' }}
           >
             {item.title}
           </p>
         </div>
       </div>
 
-      <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-        {item.description}
-      </p>
-
-      <WhyThisMattersToggle
-        reasoningText={reasoningText}
-        open={reasoningOpen}
-        onToggle={() => setReasoningOpen((o) => !o)}
-        stopCardClick={(e) => e.stopPropagation()}
-      />
-
-      {hasDiff ? (
+      {hasSuggested ? (
         <LineDiffViewer
           originalLine={item.original_line}
           suggestedLine={item.suggested_line ?? ''}
           isAccepted={isAccepted}
+          jdTheme={jdTheme}
         />
       ) : null}
+
+      <BridgeGapToggle
+        reasoningText={reasoningText}
+        descriptionText={item.description}
+        open={reasoningOpen}
+        onToggle={() => setReasoningOpen((o) => !o)}
+        stopCardClick={(e) => e.stopPropagation()}
+        jdTheme={jdTheme}
+      />
 
       <div className="flex items-center gap-2 pt-0.5">
         {isAccepted ? (
           <span
             className="flex items-center gap-1.5 font-mono text-xs"
-            style={{ color: 'var(--color-accent)' }}
+            style={{ color: jdTheme ? JD_SKY : 'var(--color-accent)' }}
           >
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
               <path
@@ -592,7 +690,7 @@ function LegacyAuditFeedbackCard({
                 strokeLinejoin="round"
               />
             </svg>
-            accepted
+            {jdTheme ? 'synced' : 'accepted'}
           </span>
         ) : (
           <>
@@ -604,18 +702,20 @@ function LegacyAuditFeedbackCard({
               }}
               className="rounded-element border px-3 py-1 font-mono text-xs transition-colors"
               style={{
-                borderColor: 'var(--color-accent-dim)',
-                color: 'var(--color-accent)',
-                background: 'transparent',
+                borderColor: jdTheme ? 'rgba(14, 165, 233, 0.45)' : 'var(--color-accent-dim)',
+                color: jdTheme ? JD_SKY : 'var(--color-accent)',
+                background: jdTheme ? 'rgba(14, 165, 233, 0.08)' : 'transparent',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'var(--color-accent-muted)'
+                e.currentTarget.style.background = jdTheme
+                  ? 'rgba(14, 165, 233, 0.15)'
+                  : 'var(--color-accent-muted)'
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent'
+                e.currentTarget.style.background = jdTheme ? 'rgba(14, 165, 233, 0.08)' : 'transparent'
               }}
             >
-              Accept change
+              {acceptLabel}
             </button>
             <button
               type="button"
@@ -625,8 +725,8 @@ function LegacyAuditFeedbackCard({
               }}
               className="rounded-element border px-3 py-1 font-mono text-xs transition-colors"
               style={{
-                borderColor: 'var(--color-border)',
-                color: 'var(--color-text-secondary)',
+                borderColor: jdTheme ? 'rgba(148, 163, 184, 0.25)' : 'var(--color-border)',
+                color: jdTheme ? JD_MUTED : 'var(--color-text-secondary)',
                 background: 'transparent',
               }}
               onMouseEnter={(e) => {
@@ -634,8 +734,8 @@ function LegacyAuditFeedbackCard({
                 e.currentTarget.style.color = 'var(--color-danger)'
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--color-border)'
-                e.currentTarget.style.color = 'var(--color-text-secondary)'
+                e.currentTarget.style.borderColor = jdTheme ? 'rgba(148, 163, 184, 0.25)' : 'var(--color-border)'
+                e.currentTarget.style.color = jdTheme ? JD_MUTED : 'var(--color-text-secondary)'
               }}
             >
               Dismiss
@@ -644,6 +744,61 @@ function LegacyAuditFeedbackCard({
         )}
       </div>
     </div>
+  )
+}
+
+function SectionRail({
+  selectedSection,
+  onSectionSelect,
+  counts,
+}: {
+  selectedSection: SectionDiagnosticKey | null
+  onSectionSelect: (key: SectionDiagnosticKey | null) => void
+  counts: Record<SectionDiagnosticKey, number>
+}) {
+  const btnBase =
+    'w-full text-left rounded-element border px-2.5 py-2 text-xs font-medium transition-colors'
+  return (
+    <nav
+      className="flex flex-row flex-wrap md:flex-col gap-1.5 shrink-0 md:w-[148px] pb-2 md:pb-0"
+      aria-label="Resume sections"
+    >
+      <button
+        type="button"
+        className={cn(btnBase, selectedSection === null && 'jd-alignment-rail-btn-active')}
+        style={{
+          borderColor: selectedSection === null ? 'transparent' : 'rgba(14, 165, 233, 0.22)',
+          color: JD_FG,
+          background: selectedSection === null ? undefined : 'rgba(15, 23, 42, 0.5)',
+        }}
+        onClick={() => onSectionSelect(null)}
+      >
+        All sections
+      </button>
+      {SECTION_DIAGNOSTIC_KEYS.map((key) => {
+        const label = SECTION_DIAGNOSTIC_LABELS[key]
+        const active = selectedSection === key
+        const n = counts[key]
+        return (
+          <button
+            key={key}
+            type="button"
+            className={cn(btnBase, active && 'jd-alignment-rail-btn-active')}
+            style={{
+              borderColor: active ? 'transparent' : 'rgba(14, 165, 233, 0.22)',
+              color: JD_FG,
+              background: active ? undefined : 'rgba(15, 23, 42, 0.5)',
+            }}
+            onClick={() => onSectionSelect(key)}
+          >
+            <span className="flex items-center justify-between gap-2">
+              <span>{label}</span>
+              <span className="font-mono text-[10px] opacity-80">[{n}]</span>
+            </span>
+          </button>
+        )
+      })}
+    </nav>
   )
 }
 
@@ -656,6 +811,10 @@ function ResumeAuditSidebarWithDiagnostics({
   onDismiss,
   onFeedbackSelect,
   accordionMultiple,
+  isJobMatch,
+  selectedSection,
+  onSectionSelect,
+  acceptLabel,
 }: {
   sectionDiagnostics: SectionDiagnostics
   accepted: Set<string>
@@ -665,24 +824,49 @@ function ResumeAuditSidebarWithDiagnostics({
   onDismiss: (id: string) => void
   onFeedbackSelect: (id: string | null) => void
   accordionMultiple: boolean
+  isJobMatch?: boolean
+  selectedSection?: SectionDiagnosticKey | null
+  onSectionSelect?: (key: SectionDiagnosticKey | null) => void
+  acceptLabel: string
 }) {
-  const defaultOpen = useMemo(() => {
-    const withItems = SECTION_DIAGNOSTIC_KEYS.filter(
-      (k) => sectionDiagnostics[k].improvements.length > 0,
+  const jdTheme = !!isJobMatch
+  const sectionKeys = useMemo(() => {
+    return SECTION_DIAGNOSTIC_KEYS.filter(
+      (k) => selectedSection == null || selectedSection === k,
     )
+  }, [selectedSection])
+
+  const counts = useMemo(() => {
+    const c = {} as Record<SectionDiagnosticKey, number>
+    for (const k of SECTION_DIAGNOSTIC_KEYS) {
+      c[k] = sectionDiagnostics[k].improvements.length
+    }
+    return c
+  }, [sectionDiagnostics])
+
+  const defaultOpen = useMemo(() => {
+    const withItems = sectionKeys.filter((k) => sectionDiagnostics[k].improvements.length > 0)
     if (withItems.length === 0) return []
     if (accordionMultiple) return withItems
     return [withItems[0]]
-  }, [sectionDiagnostics, accordionMultiple])
+  }, [sectionDiagnostics, accordionMultiple, sectionKeys])
 
-  return (
+  const accordion = (
     <Accordion
+      key={selectedSection ?? 'all'}
       multiple={accordionMultiple}
       defaultValue={defaultOpen}
-      className="rounded-card border overflow-hidden"
-      style={{ borderColor: 'var(--color-border-strong)', background: 'var(--color-bg-raised)' }}
+      className={cn(
+        'rounded-card border overflow-hidden min-w-0 flex-1',
+        jdTheme && 'border-[rgba(14,165,233,0.22)] bg-[rgba(15,23,42,0.4)]',
+      )}
+      style={
+        jdTheme
+          ? undefined
+          : { borderColor: 'var(--color-border-strong)', background: 'var(--color-bg-raised)' }
+      }
     >
-      {SECTION_DIAGNOSTIC_KEYS.map((key) => {
+      {sectionKeys.map((key) => {
         const audit = sectionDiagnostics[key]
         const label = SECTION_DIAGNOSTIC_LABELS[key]
         const improvementCount = audit.improvements.length
@@ -735,7 +919,7 @@ function ResumeAuditSidebarWithDiagnostics({
                 }}
               >
                 <p className="font-mono text-[10px] tracking-wide" style={{ color: 'var(--color-text-tertiary)' }}>
-                  Audit
+                  {jdTheme ? 'Snapshot' : 'Audit'}
                 </p>
                 {audit.strengths.length > 0 ? (
                   <div className="flex flex-col gap-2">
@@ -781,6 +965,8 @@ function ResumeAuditSidebarWithDiagnostics({
                           onAccept={() => onAccept(imp.id)}
                           onDismiss={() => onDismiss(imp.id)}
                           onSelect={() => onFeedbackSelect(imp.id)}
+                          jdTheme={jdTheme}
+                          acceptLabel={acceptLabel}
                         />
                       )
                     }
@@ -792,6 +978,7 @@ function ResumeAuditSidebarWithDiagnostics({
                         isActive={activeFeedbackId === imp.id}
                         onDismiss={() => onDismiss(imp.id)}
                         onSelect={() => onFeedbackSelect(imp.id)}
+                        jdTheme={jdTheme}
                       />
                     )
                   })}
@@ -803,6 +990,23 @@ function ResumeAuditSidebarWithDiagnostics({
       })}
     </Accordion>
   )
+
+  if (jdTheme && onSectionSelect) {
+    return (
+      <div className="jd-alignment-panel flex flex-col gap-2 min-h-0 flex-1 p-3">
+        <div className="flex flex-col md:flex-row gap-3 min-h-0 flex-1">
+          <SectionRail
+            selectedSection={selectedSection ?? null}
+            onSectionSelect={onSectionSelect}
+            counts={counts}
+          />
+          <div className="min-w-0 flex-1 min-h-0 overflow-y-auto">{accordion}</div>
+        </div>
+      </div>
+    )
+  }
+
+  return <div className="min-h-0 flex-1 overflow-y-auto">{accordion}</div>
 }
 
 function ResumeAuditSidebarLegacy({
@@ -814,24 +1018,50 @@ function ResumeAuditSidebarLegacy({
   onDismiss,
   onFeedbackSelect,
   accordionMultiple,
+  isJobMatch,
+  selectedSection,
+  onSectionSelect,
+  acceptLabel,
 }: Omit<ResumeAuditSidebarProps, 'sectionDiagnostics'>) {
   const grouped = useMemo(() => groupFeedbackBySection(feedback), [feedback])
+  const jdTheme = !!isJobMatch
+
+  const legacySections = useMemo(() => {
+    if (!selectedSection) return LEGACY_SECTIONS
+    return LEGACY_SECTIONS.filter((s) => s.key === selectedSection)
+  }, [selectedSection])
+
+  const counts = useMemo(() => {
+    const c = {} as Record<AuditSectionKey, number>
+    for (const s of LEGACY_SECTIONS) {
+      c[s.key] = grouped[s.key].length
+    }
+    return c
+  }, [grouped])
 
   const defaultOpen = useMemo(() => {
-    const withItems = LEGACY_SECTIONS.filter((s) => grouped[s.key].length > 0).map((s) => s.key)
+    const withItems = legacySections.filter((s) => grouped[s.key].length > 0).map((s) => s.key)
     if (withItems.length === 0) return []
     if (accordionMultiple) return withItems
     return [withItems[0]]
-  }, [grouped, accordionMultiple])
+  }, [grouped, accordionMultiple, legacySections])
 
-  return (
+  const accordion = (
     <Accordion
+      key={selectedSection ?? 'all'}
       multiple={accordionMultiple}
       defaultValue={defaultOpen}
-      className="rounded-card border overflow-hidden"
-      style={{ borderColor: 'var(--color-border-strong)', background: 'var(--color-bg-raised)' }}
+      className={cn(
+        'rounded-card border overflow-hidden min-w-0 flex-1',
+        jdTheme && 'border-[rgba(14,165,233,0.22)] bg-[rgba(15,23,42,0.4)]',
+      )}
+      style={
+        jdTheme
+          ? undefined
+          : { borderColor: 'var(--color-border-strong)', background: 'var(--color-bg-raised)' }
+      }
     >
-      {LEGACY_SECTIONS.map(({ key, label }) => {
+      {legacySections.map(({ key, label }) => {
         const items = grouped[key]
         const count = items.length
         const { worst } = sectionSeveritySummary(items)
@@ -932,6 +1162,8 @@ function ResumeAuditSidebarLegacy({
                       onAccept={() => onAccept(item.id)}
                       onDismiss={() => onDismiss(item.id)}
                       onSelect={() => onFeedbackSelect(item.id)}
+                      jdTheme={jdTheme}
+                      acceptLabel={acceptLabel}
                     />
                   ))}
                 </div>
@@ -942,6 +1174,23 @@ function ResumeAuditSidebarLegacy({
       })}
     </Accordion>
   )
+
+  if (jdTheme && onSectionSelect) {
+    return (
+      <div className="jd-alignment-panel flex flex-col gap-2 min-h-0 flex-1 p-3">
+        <div className="flex flex-col md:flex-row gap-3 min-h-0 flex-1">
+          <SectionRail
+            selectedSection={selectedSection ?? null}
+            onSectionSelect={onSectionSelect}
+            counts={counts}
+          />
+          <div className="min-w-0 flex-1 min-h-0 overflow-y-auto">{accordion}</div>
+        </div>
+      </div>
+    )
+  }
+
+  return <div className="min-h-0 flex-1 overflow-y-auto">{accordion}</div>
 }
 
 export function ResumeAuditSidebar({
@@ -954,7 +1203,12 @@ export function ResumeAuditSidebar({
   onDismiss,
   onFeedbackSelect,
   accordionMultiple = true,
+  isJobMatch = false,
+  selectedSection = null,
+  onSectionSelect,
 }: ResumeAuditSidebarProps) {
+  const acceptLabel = isJobMatch ? 'Sync to JD' : 'Accept change'
+
   if (sectionDiagnostics) {
     return (
       <ResumeAuditSidebarWithDiagnostics
@@ -966,6 +1220,10 @@ export function ResumeAuditSidebar({
         onDismiss={onDismiss}
         onFeedbackSelect={onFeedbackSelect}
         accordionMultiple={accordionMultiple}
+        isJobMatch={isJobMatch}
+        selectedSection={selectedSection}
+        onSectionSelect={onSectionSelect}
+        acceptLabel={acceptLabel}
       />
     )
   }
@@ -980,6 +1238,10 @@ export function ResumeAuditSidebar({
       onDismiss={onDismiss}
       onFeedbackSelect={onFeedbackSelect}
       accordionMultiple={accordionMultiple}
+      isJobMatch={isJobMatch}
+      selectedSection={selectedSection}
+      onSectionSelect={onSectionSelect}
+      acceptLabel={acceptLabel}
     />
   )
 }

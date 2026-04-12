@@ -6,7 +6,13 @@ import { ScoreRing } from '@/components/scan/ScoreRing'
 import { SubScoreBar } from '@/components/scan/SubScoreBar'
 import { ScanResultTabs } from '@/components/scan/ScanResultTabs'
 import { ResumeAnnotationPanel, type WorkbenchTab } from '@/components/scan/ResumeAnnotationPanel'
-import type { ScanRecord, FeedbackItem, SectionDiagnostics, StructuredResume } from '@/lib/types'
+import type {
+  ScanRecord,
+  FeedbackItem,
+  SectionDiagnostics,
+  StructuredResume,
+  SectionDiagnosticKey,
+} from '@/lib/types'
 
 type ViewMode = 'split' | 'analysis' | 'document'
 
@@ -56,10 +62,52 @@ export function ScanResultLayout({
     () => initialStructuredResume,
   )
   const [workbenchTab, setWorkbenchTab] = useState<WorkbenchTab>('editor')
+  const [selectedSection, setSelectedSection] = useState<SectionDiagnosticKey | null>(null)
+  const [jdDeltaOverall, setJdDeltaOverall] = useState(0)
+  const [jdDeltaJobMatch, setJdDeltaJobMatch] = useState(0)
+  const [editorFlashFieldPath, setEditorFlashFieldPath] = useState<string | null>(null)
+  const [editorFlashNonce, setEditorFlashNonce] = useState(0)
 
   useEffect(() => {
     setStructuredResume(initialStructuredResume)
   }, [scan.id, initialStructuredResume])
+
+  useEffect(() => {
+    setJdDeltaOverall(0)
+    setJdDeltaJobMatch(0)
+    setEditorFlashFieldPath(null)
+    setEditorFlashNonce(0)
+    setSelectedSection(null)
+  }, [scan.id])
+
+  const displayOverall = isJobMatch
+    ? Math.min(100, scan.overall_score + jdDeltaOverall)
+    : scan.overall_score
+
+  const displayJobMatch = isJobMatch
+    ? Math.min(20, scan.score_job_match + jdDeltaJobMatch)
+    : scan.score_job_match
+
+  function bumpJdScores(severity: FeedbackItem['severity']) {
+    const o = severity === 'high' ? 3 : severity === 'medium' ? 2 : 1
+    const j = severity === 'high' ? 2 : 1
+    setJdDeltaOverall((d) => Math.min(100 - scan.overall_score, d + o))
+    setJdDeltaJobMatch((d) => Math.min(20 - scan.score_job_match, d + j))
+  }
+
+  function handleSectionSelect(key: SectionDiagnosticKey | null) {
+    setSelectedSection(key)
+    setWorkbenchTab('editor')
+  }
+
+  function handleJdFeedbackSynced(item: FeedbackItem, fieldPath: string | null) {
+    if (!isJobMatch) return
+    bumpJdScores(item.severity)
+    if (fieldPath) {
+      setEditorFlashFieldPath(fieldPath)
+      setEditorFlashNonce((n) => n + 1)
+    }
+  }
 
   const { status: structuredSaveStatus, errorMessage: structuredSaveError } =
     useDebouncedStructuredResumeSave(scan.id, structuredResume, initialStructuredResume)
@@ -172,16 +220,26 @@ export function ScanResultLayout({
           borderColor: 'var(--color-border-strong)',
         }}
       >
-        <ScoreRing score={scan.overall_score} dense />
+        <ScoreRing
+          score={displayOverall}
+          dense
+          qualityLabel={isJobMatch ? 'JD Match Quality' : null}
+        />
         <div
           className="hidden sm:block h-px sm:h-auto sm:w-px sm:self-stretch shrink-0"
           style={{ background: 'var(--color-border-strong)' }}
           aria-hidden
         />
         <div className="flex-1 min-w-0 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-3 gap-y-2">
-          {SUB_SCORES.map(({ key, label }) => (
-            <SubScoreBar key={key} label={label} score={scan[key] ?? 0} compact dense />
-          ))}
+          {SUB_SCORES.map(({ key, label }) => {
+            const score =
+              key === 'score_job_match' && isJobMatch
+                ? displayJobMatch
+                : scan[key] ?? 0
+            const barLabel =
+              isJobMatch && key === 'score_job_match' ? 'JD alignment' : label
+            return <SubScoreBar key={key} label={barLabel} score={score} compact dense />
+          })}
         </div>
       </div>
 
@@ -198,7 +256,7 @@ export function ScanResultLayout({
         {showFeedbackPanel && (
           <section
             className={[
-              'min-h-0 flex flex-col rounded-card border overflow-hidden',
+              'min-h-0 flex flex-col rounded-card border overflow-hidden flex-1',
               isSplit ? 'hidden lg:flex h-full' : 'hidden lg:flex flex-1 h-full',
             ].join(' ')}
             style={{
@@ -217,6 +275,9 @@ export function ScanResultLayout({
               onFeedbackSelect={handleFeedbackSelect}
               structuredResume={structuredResume}
               onStructuredResumeChange={setStructuredResume}
+              selectedSection={selectedSection}
+              onSectionSelect={handleSectionSelect}
+              onJdFeedbackSynced={handleJdFeedbackSynced}
             />
           </section>
         )}
@@ -247,6 +308,9 @@ export function ScanResultLayout({
               workbenchTab={workbenchTab}
               onWorkbenchTabChange={setWorkbenchTab}
               onStructuredResumeChange={setStructuredResume}
+              scrollSectionKey={selectedSection}
+              flashFieldPath={editorFlashFieldPath}
+              flashFieldNonce={editorFlashNonce}
             />
           </section>
         )}

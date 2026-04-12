@@ -16,6 +16,8 @@ export const FeedbackItemSchema = z.object({
   section: z.string(),
   title: z.string(),
   description: z.string(),
+  /** JD gap label, e.g. "Requirement: Distributed systems" (job match) */
+  alignment_target: z.string().optional(),
   reasoning: z.string().optional(),
   original_line: z.string().nullable(),
   suggested_line: z.string().nullable(),
@@ -29,6 +31,7 @@ export const SectionImprovementSchema = z.object({
   severity: z.enum(['high', 'medium', 'low']),
   title: z.string(),
   description: z.string(),
+  alignment_target: z.string().optional(),
   reasoning: z.string().optional(),
   original_line: z.string().nullable(),
   suggested_line: z.string().nullable(),

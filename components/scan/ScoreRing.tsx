@@ -8,6 +8,8 @@ interface ScoreRingProps {
   compact?: boolean
   /** Minimal height: small ring with verdict beside it (scan result top bar) */
   dense?: boolean
+  /** When set (e.g. job match), shown beside dense ring and in aria-label instead of "Overall score" */
+  qualityLabel?: string | null
 }
 
 function getColor(score: number): string {
@@ -27,7 +29,12 @@ const DEFAULT_RADIUS = 54
 const COMPACT_RADIUS = 38
 const DENSE_RADIUS = 22
 
-export function ScoreRing({ score, compact = false, dense = false }: ScoreRingProps) {
+export function ScoreRing({
+  score,
+  compact = false,
+  dense = false,
+  qualityLabel = null,
+}: ScoreRingProps) {
   const [animated, setAnimated] = useState(false)
 
   useEffect(() => {
@@ -58,7 +65,7 @@ export function ScoreRing({ score, compact = false, dense = false }: ScoreRingPr
         width={size}
         height={size}
         viewBox={`0 0 ${size} ${size}`}
-        aria-label={`Overall score: ${clampedScore} out of 100`}
+        aria-label={`${qualityLabel ?? 'Overall score'}: ${clampedScore} out of 100`}
         role="img"
       >
         <circle
@@ -104,12 +111,22 @@ export function ScoreRing({ score, compact = false, dense = false }: ScoreRingPr
     return (
       <div className="flex flex-row items-center gap-3 shrink-0">
         {ringBlock}
-        <span
-          className="font-mono text-[10px] leading-snug tracking-wide max-w-[9rem]"
-          style={{ color: 'var(--color-text-secondary)' }}
-        >
-          {verdict}
-        </span>
+        <div className="flex flex-col gap-0.5 min-w-0 max-w-[10rem]">
+          {qualityLabel ? (
+            <span
+              className="font-mono text-[10px] leading-snug tracking-wide"
+              style={{ color: 'var(--color-text-tertiary)' }}
+            >
+              {qualityLabel}
+            </span>
+          ) : null}
+          <span
+            className="font-mono text-[10px] leading-snug tracking-wide"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            {verdict}
+          </span>
+        </div>
       </div>
     )
   }

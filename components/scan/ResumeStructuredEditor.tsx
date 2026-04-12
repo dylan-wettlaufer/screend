@@ -1,11 +1,16 @@
 'use client'
 
-import type { CSSProperties } from 'react'
+'use client'
+
+import { useEffect, type CSSProperties } from 'react'
 import type { StructuredResume } from '@/lib/types'
 
 interface ResumeStructuredEditorProps {
   value: StructuredResume
   onChange: (next: StructuredResume) => void
+  /** First changed field path after JD sync; triggers a one-shot flash on that control */
+  flashFieldPath?: string | null
+  flashFieldNonce?: number
 }
 
 function fieldClass() {
@@ -61,11 +66,33 @@ const emptyProject: StructuredResume['projects'][number] = {
   bullets: [''],
 }
 
-export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEditorProps) {
+export function ResumeStructuredEditor({
+  value,
+  onChange,
+  flashFieldPath,
+  flashFieldNonce = 0,
+}: ResumeStructuredEditorProps) {
+  useEffect(() => {
+    if (!flashFieldPath) return
+    const el = document.querySelector(
+      `[data-field-path="${flashFieldPath.replace(/"/g, '\\"')}"]`,
+    ) as HTMLElement | null
+    if (!el) return
+    el.classList.remove('jd-sync-flash')
+    void el.offsetWidth
+    el.classList.add('jd-sync-flash')
+    const t = window.setTimeout(() => el.classList.remove('jd-sync-flash'), 1200)
+    return () => window.clearTimeout(t)
+  }, [flashFieldPath, flashFieldNonce])
+
   return (
     <div className="flex flex-col gap-4 pb-4">
       {/* Contact */}
-      <fieldset className="rounded-card border p-4 space-y-3" style={sectionCardStyle}>
+      <fieldset
+        id="resume-section-header"
+        className="rounded-card border p-4 space-y-3 scroll-mt-4"
+        style={sectionCardStyle}
+      >
         <legend className="text-xs font-medium mb-1 px-0.5" style={{ color: 'var(--color-text-secondary)' }}>
           Contact
         </legend>
@@ -75,6 +102,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
               Name
             </label>
             <input
+              data-field-path="header.name"
               className={fieldClass()}
               style={inputStyle()}
               value={value.name}
@@ -86,6 +114,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
               Phone
             </label>
             <input
+              data-field-path="header.phone"
               className={fieldClass()}
               style={inputStyle()}
               value={value.phone}
@@ -97,6 +126,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
               Email
             </label>
             <input
+              data-field-path="header.email"
               className={fieldClass()}
               style={inputStyle()}
               value={value.email}
@@ -108,6 +138,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
               LinkedIn (username or path)
             </label>
             <input
+              data-field-path="header.linkedin"
               className={fieldClass()}
               style={inputStyle()}
               value={value.linkedin}
@@ -119,6 +150,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
               GitHub (username)
             </label>
             <input
+              data-field-path="header.github"
               className={fieldClass()}
               style={inputStyle()}
               value={value.github}
@@ -129,7 +161,11 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
       </fieldset>
 
       {/* Education */}
-      <fieldset className="rounded-card border p-4 space-y-3" style={sectionCardStyle}>
+      <fieldset
+        id="resume-section-education"
+        className="rounded-card border p-4 space-y-3 scroll-mt-4"
+        style={sectionCardStyle}
+      >
         <legend className="text-xs font-medium mb-1 px-0.5" style={{ color: 'var(--color-text-secondary)' }}>
           Education
         </legend>
@@ -146,6 +182,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
                     School
                   </label>
                   <input
+                    data-field-path={`education.${i}.school`}
                     className={fieldClass()}
                     style={inputStyle()}
                     value={edu.school}
@@ -161,6 +198,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
                     Location
                   </label>
                   <input
+                    data-field-path={`education.${i}.location`}
                     className={fieldClass()}
                     style={inputStyle()}
                     value={edu.location}
@@ -176,6 +214,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
                     Degree
                   </label>
                   <input
+                    data-field-path={`education.${i}.degree`}
                     className={fieldClass()}
                     style={inputStyle()}
                     value={edu.degree}
@@ -191,6 +230,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
                     Start
                   </label>
                   <input
+                    data-field-path={`education.${i}.start`}
                     className={fieldClass()}
                     style={inputStyle()}
                     value={edu.start}
@@ -206,6 +246,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
                     End
                   </label>
                   <input
+                    data-field-path={`education.${i}.end`}
                     className={fieldClass()}
                     style={inputStyle()}
                     value={edu.end}
@@ -221,6 +262,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
                     Honors
                   </label>
                   <input
+                    data-field-path={`education.${i}.honors`}
                     className={fieldClass()}
                     style={inputStyle()}
                     value={edu.honors}
@@ -236,6 +278,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
                     Coursework
                   </label>
                   <input
+                    data-field-path={`education.${i}.coursework`}
                     className={fieldClass()}
                     style={inputStyle()}
                     value={edu.coursework}
@@ -282,7 +325,11 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
       </fieldset>
 
       {/* Skills */}
-      <fieldset className="rounded-card border p-4 space-y-3" style={sectionCardStyle}>
+      <fieldset
+        id="resume-section-skills"
+        className="rounded-card border p-4 space-y-3 scroll-mt-4"
+        style={sectionCardStyle}
+      >
         <legend className="text-xs font-medium mb-1 px-0.5" style={{ color: 'var(--color-text-secondary)' }}>
           Technical skills
         </legend>
@@ -299,6 +346,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
               {label}
             </label>
             <textarea
+              data-field-path={`skills.${key}`}
               className={`${fieldClass()} min-h-[56px] resize-y font-mono text-xs`}
               style={inputStyle()}
               value={value.skills[key]}
@@ -311,7 +359,11 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
       </fieldset>
 
       {/* Experience */}
-      <fieldset className="rounded-card border p-4 space-y-3" style={sectionCardStyle}>
+      <fieldset
+        id="resume-section-experience"
+        className="rounded-card border p-4 space-y-3 scroll-mt-4"
+        style={sectionCardStyle}
+      >
         <legend className="text-xs font-medium mb-1 px-0.5" style={{ color: 'var(--color-text-secondary)' }}>
           Experience
         </legend>
@@ -328,6 +380,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
                     Company
                   </label>
                   <input
+                    data-field-path={`experience.${i}.company`}
                     className={fieldClass()}
                     style={inputStyle()}
                     value={exp.company}
@@ -343,6 +396,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
                     Title
                   </label>
                   <input
+                    data-field-path={`experience.${i}.title`}
                     className={fieldClass()}
                     style={inputStyle()}
                     value={exp.title}
@@ -358,6 +412,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
                     Location
                   </label>
                   <input
+                    data-field-path={`experience.${i}.location`}
                     className={fieldClass()}
                     style={inputStyle()}
                     value={exp.location}
@@ -373,6 +428,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
                     Start
                   </label>
                   <input
+                    data-field-path={`experience.${i}.start`}
                     className={fieldClass()}
                     style={inputStyle()}
                     value={exp.start}
@@ -388,6 +444,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
                     End
                   </label>
                   <input
+                    data-field-path={`experience.${i}.end`}
                     className={fieldClass()}
                     style={inputStyle()}
                     value={exp.end}
@@ -406,6 +463,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
                 {exp.bullets.map((b, bi) => (
                   <div key={bi} className="flex gap-1 mb-1">
                     <textarea
+                      data-field-path={`experience.${i}.bullets.${bi}`}
                       className={`${fieldClass()} min-h-[48px] resize-y flex-1 font-mono text-xs`}
                       style={inputStyle()}
                       value={b}
@@ -482,7 +540,11 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
       </fieldset>
 
       {/* Projects */}
-      <fieldset className="rounded-card border p-4 space-y-3" style={sectionCardStyle}>
+      <fieldset
+        id="resume-section-projects"
+        className="rounded-card border p-4 space-y-3 scroll-mt-4"
+        style={sectionCardStyle}
+      >
         <legend className="text-xs font-medium mb-1 px-0.5" style={{ color: 'var(--color-text-secondary)' }}>
           Projects
         </legend>
@@ -499,6 +561,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
                     Name
                   </label>
                   <input
+                    data-field-path={`projects.${i}.name`}
                     className={fieldClass()}
                     style={inputStyle()}
                     value={proj.name}
@@ -514,6 +577,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
                     Technologies
                   </label>
                   <input
+                    data-field-path={`projects.${i}.technologies`}
                     className={fieldClass()}
                     style={inputStyle()}
                     value={proj.technologies}
@@ -529,6 +593,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
                     Start
                   </label>
                   <input
+                    data-field-path={`projects.${i}.start`}
                     className={fieldClass()}
                     style={inputStyle()}
                     value={proj.start}
@@ -544,6 +609,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
                     End
                   </label>
                   <input
+                    data-field-path={`projects.${i}.end`}
                     className={fieldClass()}
                     style={inputStyle()}
                     value={proj.end}
@@ -562,6 +628,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
                 {proj.bullets.map((b, bi) => (
                   <div key={bi} className="flex gap-1 mb-1">
                     <textarea
+                      data-field-path={`projects.${i}.bullets.${bi}`}
                       className={`${fieldClass()} min-h-[48px] resize-y flex-1 font-mono text-xs`}
                       style={inputStyle()}
                       value={b}
