@@ -1022,7 +1022,7 @@ function ResumeAuditSidebarLegacy({
   selectedSection,
   onSectionSelect,
   acceptLabel,
-}: Omit<ResumeAuditSidebarProps, 'sectionDiagnostics'>) {
+}: Omit<ResumeAuditSidebarProps, 'sectionDiagnostics'> & { acceptLabel: string }) {
   const grouped = useMemo(() => groupFeedbackBySection(feedback), [feedback])
   const jdTheme = !!isJobMatch
 

@@ -13,6 +13,9 @@ import type {
   StructuredResume,
   SectionDiagnosticKey,
 } from '@/lib/types'
+import { mapFeedbackSectionToDiagnosticKey } from '@/lib/mapFeedbackSectionToDiagnosticKey'
+import { resolveFeedbackToFieldPath } from '@/lib/resolveFeedbackToFieldPath'
+import { fieldPathToSectionKey } from '@/lib/structuredResumeDiff'
 
 type ViewMode = 'split' | 'analysis' | 'document'
 
@@ -67,6 +70,13 @@ export function ScanResultLayout({
   const [jdDeltaJobMatch, setJdDeltaJobMatch] = useState(0)
   const [editorFlashFieldPath, setEditorFlashFieldPath] = useState<string | null>(null)
   const [editorFlashNonce, setEditorFlashNonce] = useState(0)
+  const [editorScrollSection, setEditorScrollSection] = useState<SectionDiagnosticKey | null>(null)
+  const [editorScrollNonce, setEditorScrollNonce] = useState(0)
+  const [editorScrollFieldPath, setEditorScrollFieldPath] = useState<string | null>(null)
+  const [editorScrollFieldPathNonce, setEditorScrollFieldPathNonce] = useState(0)
+  const [highlightedEditorSection, setHighlightedEditorSection] =
+    useState<SectionDiagnosticKey | null>(null)
+  const [highlightedEditorFieldPath, setHighlightedEditorFieldPath] = useState<string | null>(null)
 
   useEffect(() => {
     setStructuredResume(initialStructuredResume)
@@ -78,6 +88,12 @@ export function ScanResultLayout({
     setEditorFlashFieldPath(null)
     setEditorFlashNonce(0)
     setSelectedSection(null)
+    setEditorScrollSection(null)
+    setEditorScrollNonce(0)
+    setEditorScrollFieldPath(null)
+    setEditorScrollFieldPathNonce(0)
+    setHighlightedEditorSection(null)
+    setHighlightedEditorFieldPath(null)
   }, [scan.id])
 
   const displayOverall = isJobMatch
@@ -98,14 +114,40 @@ export function ScanResultLayout({
   function handleSectionSelect(key: SectionDiagnosticKey | null) {
     setSelectedSection(key)
     setWorkbenchTab('editor')
+    setActiveFeedbackId(null)
+    setEditorScrollFieldPath(null)
+    setHighlightedEditorFieldPath(null)
+    if (key != null) {
+      setEditorScrollSection(key)
+      setEditorScrollNonce((n) => n + 1)
+      setHighlightedEditorSection(key)
+    } else {
+      setHighlightedEditorSection(null)
+    }
   }
 
   function handleJdFeedbackSynced(item: FeedbackItem, fieldPath: string | null) {
-    if (!isJobMatch) return
-    bumpJdScores(item.severity)
+    if (isJobMatch) {
+      bumpJdScores(item.severity)
+    }
+    setWorkbenchTab('editor')
     if (fieldPath) {
       setEditorFlashFieldPath(fieldPath)
       setEditorFlashNonce((n) => n + 1)
+      const sk = fieldPathToSectionKey(fieldPath)
+      if (sk === 'experience' || sk === 'projects') {
+        setEditorScrollFieldPath(fieldPath)
+        setEditorScrollFieldPathNonce((n) => n + 1)
+        setHighlightedEditorFieldPath(fieldPath)
+        setEditorScrollSection(null)
+        setHighlightedEditorSection(null)
+      } else if (sk) {
+        setEditorScrollFieldPath(null)
+        setHighlightedEditorFieldPath(null)
+        setEditorScrollSection(sk)
+        setEditorScrollNonce((n) => n + 1)
+        setHighlightedEditorSection(sk)
+      }
     }
   }
 
@@ -133,7 +175,46 @@ export function ScanResultLayout({
           : 'var(--color-text-secondary)'
 
   function handleFeedbackSelect(id: string | null) {
-    setActiveFeedbackId((prev) => (prev === id ? null : id))
+    if (id == null) {
+      setActiveFeedbackId(null)
+      setHighlightedEditorSection(null)
+      setHighlightedEditorFieldPath(null)
+      setEditorScrollFieldPath(null)
+      return
+    }
+    setActiveFeedbackId((prev) => {
+      const next = prev === id ? null : id
+      queueMicrotask(() => {
+        if (next == null) {
+          setHighlightedEditorSection(null)
+          setHighlightedEditorFieldPath(null)
+          setEditorScrollFieldPath(null)
+          return
+        }
+        const item = feedback.find((f) => f.id === next)
+        if (!item) return
+        const key = mapFeedbackSectionToDiagnosticKey(item.section)
+        const fieldPath = resolveFeedbackToFieldPath(item, structuredResume)
+        const useEntryFocus =
+          fieldPath != null && (key === 'experience' || key === 'projects')
+
+        if (useEntryFocus) {
+          setEditorScrollFieldPath(fieldPath)
+          setEditorScrollFieldPathNonce((n) => n + 1)
+          setHighlightedEditorFieldPath(fieldPath)
+          setEditorScrollSection(null)
+          setHighlightedEditorSection(null)
+        } else {
+          setEditorScrollFieldPath(null)
+          setHighlightedEditorFieldPath(null)
+          setEditorScrollSection(key)
+          setEditorScrollNonce((n) => n + 1)
+          setHighlightedEditorSection(key)
+        }
+        setWorkbenchTab('editor')
+      })
+      return next
+    })
   }
 
   const showResumePanel = viewMode === 'split' || viewMode === 'document'
@@ -308,7 +389,12 @@ export function ScanResultLayout({
               workbenchTab={workbenchTab}
               onWorkbenchTabChange={setWorkbenchTab}
               onStructuredResumeChange={setStructuredResume}
-              scrollSectionKey={selectedSection}
+              scrollSectionKey={editorScrollSection}
+              scrollSectionNonce={editorScrollNonce}
+              scrollFieldPath={editorScrollFieldPath}
+              scrollFieldPathNonce={editorScrollFieldPathNonce}
+              highlightedSectionKey={highlightedEditorSection}
+              highlightedFieldPath={highlightedEditorFieldPath}
               flashFieldPath={editorFlashFieldPath}
               flashFieldNonce={editorFlashNonce}
             />

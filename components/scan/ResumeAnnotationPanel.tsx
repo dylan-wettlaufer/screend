@@ -23,6 +23,15 @@ interface ResumeAnnotationPanelProps {
   onStructuredResumeChange: (next: StructuredResume) => void
   /** Scroll editor to this section (structured resume fieldset ids) */
   scrollSectionKey?: SectionDiagnosticKey | null
+  /** Increment to scroll again when the same section is re-targeted */
+  scrollSectionNonce?: number
+  /** Scroll to this `data-field-path` (e.g. exact experience/project bullet) */
+  scrollFieldPath?: string | null
+  scrollFieldPathNonce?: number
+  /** Fieldset to outline while a suggestion is focused */
+  highlightedSectionKey?: SectionDiagnosticKey | null
+  /** Entry-level path: outlines the matching experience/project card */
+  highlightedFieldPath?: string | null
   flashFieldPath?: string | null
   /** Increment to re-run flash on the same path */
   flashFieldNonce?: number
@@ -121,6 +130,11 @@ export function ResumeAnnotationPanel({
   onWorkbenchTabChange,
   onStructuredResumeChange,
   scrollSectionKey = null,
+  scrollSectionNonce = 0,
+  scrollFieldPath = null,
+  scrollFieldPathNonce = 0,
+  highlightedSectionKey = null,
+  highlightedFieldPath = null,
   flashFieldPath = null,
   flashFieldNonce = 0,
 }: ResumeAnnotationPanelProps) {
@@ -129,12 +143,21 @@ export function ResumeAnnotationPanel({
   const showWorkbenchChrome = showWorkbench || isBootstrappingStructure
 
   useEffect(() => {
+    if (scrollFieldPath) {
+      const el = document.querySelector(
+        `[data-field-path="${scrollFieldPath.replace(/"/g, '\\"')}"]`,
+      ) as HTMLElement | null
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' })
+        return
+      }
+    }
     if (!scrollSectionKey) return
     const id = `resume-section-${scrollSectionKey}`
     const el = document.getElementById(id)
     if (!el) return
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [scrollSectionKey])
+    el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' })
+  }, [scrollFieldPath, scrollFieldPathNonce, scrollSectionKey, scrollSectionNonce])
 
   return (
     <>
@@ -225,6 +248,8 @@ export function ResumeAnnotationPanel({
               <ResumeStructuredEditor
                 value={structuredResume!}
                 onChange={onStructuredResumeChange}
+                highlightedSectionKey={highlightedSectionKey}
+                highlightedFieldPath={highlightedFieldPath}
                 flashFieldPath={flashFieldPath}
                 flashFieldNonce={flashFieldNonce}
               />

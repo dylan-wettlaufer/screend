@@ -1,5 +1,151 @@
 import type { FeedbackItem, StructuredResume } from '@/lib/types'
 
+const SKILL_FIELD_KEYS = ['languages', 'frameworks', 'developer_tools', 'libraries'] as const
+
+type SkillFieldKey = (typeof SKILL_FIELD_KEYS)[number]
+
+function isSkillsFeedbackItem(item: FeedbackItem): boolean {
+  return /skill|certif|tech stack|technical skill/i.test(item.section)
+}
+
+function pickSkillsAppendTarget(suggested: string): SkillFieldKey {
+  const s = suggested.toLowerCase()
+  if (
+    /\b(python|java|typescript|javascript|js\b|golang|go\b|ruby|c\+\+|c#|kotlin|swift|php|rust|scala|elixir|haskell)\b/.test(
+      s,
+    )
+  ) {
+    return 'languages'
+  }
+  if (
+    /\b(react|vue|angular|svelte|next\.?js|nuxt|django|flask|fastapi|spring|rails|laravel|express|nest\.?js)\b/.test(
+      s,
+    )
+  ) {
+    return 'frameworks'
+  }
+  if (
+    /\b(pandas|numpy|scipy|tensorflow|pytorch|keras|matplotlib|lodash|redux)\b/.test(s)
+  ) {
+    return 'libraries'
+  }
+  if (
+    /\b(docker|kubernetes|k8s|aws|gcp|azure|terraform|ansible|jenkins|ci\/cd|github actions|gitlab|kafka|rabbitmq|redis|postgres|mongodb|mysql|elasticsearch)\b/.test(
+      s,
+    )
+  ) {
+    return 'developer_tools'
+  }
+  return 'developer_tools'
+}
+
+function splitSkillPhrase(s: string): string[] {
+  return s
+    .split(/[,;]|(?:\s+and\s+)/i)
+    .map((p) => normalizeWs(p))
+    .filter(Boolean)
+}
+
+/** Multi-clause suggested lines (e.g. Google XYZ) stay one cell; short comma lists split into tokens. */
+function expandSuggestedTokens(toTrim: string): string[] {
+  if (toTrim.length > 160 || /\bas measured by\b/i.test(toTrim)) {
+    return [toTrim]
+  }
+  const parts = splitSkillPhrase(toTrim)
+  return parts.length > 0 ? parts : [toTrim]
+}
+
+function dedupeTokens(tokens: string[]): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const t of tokens) {
+    const k = t.toLowerCase()
+    if (!seen.has(k)) {
+      seen.add(k)
+      out.push(t)
+    }
+  }
+  return out
+}
+
+/** Replace first case-insensitive occurrence of needle in haystack. */
+function replaceFirstInsensitive(haystack: string, needle: string, replacement: string): string {
+  const lowerH = haystack.toLowerCase()
+  const lowerN = needle.toLowerCase()
+  const idx = lowerH.indexOf(lowerN)
+  if (idx === -1) return haystack
+  return haystack.slice(0, idx) + replacement + haystack.slice(idx + needle.length)
+}
+
+/**
+ * Skills feedback often uses resume lines that do not match comma-joined editor fields, or
+ * omits original_line for "add X" gaps. Merge into structured `skills` explicitly.
+ */
+function applySkillsSectionFeedback(resume: StructuredResume, item: FeedbackItem): StructuredResume {
+  const toRaw = item.suggested_line
+  if (toRaw == null) return resume
+  const toTrim = normalizeWs(toRaw)
+  if (!toTrim) return resume
+
+  const fromRaw = item.original_line
+  const fromTrim = fromRaw != null ? normalizeWs(fromRaw) : ''
+
+  const next = structuredClone(resume) as StructuredResume
+  const skillsBefore = JSON.stringify(next.skills)
+
+  if (fromTrim) {
+    for (const needle of buildNeedles(fromRaw!)) {
+      if (!needle) continue
+      for (const key of SKILL_FIELD_KEYS) {
+        if (next.skills[key].includes(needle)) {
+          next.skills[key] = replaceAll(next.skills[key], needle, toTrim)
+          if (JSON.stringify(next.skills) !== skillsBefore) return next
+        }
+      }
+      for (const key of SKILL_FIELD_KEYS) {
+        const patched = replaceFirstInsensitive(next.skills[key], needle, toTrim)
+        if (patched !== next.skills[key]) {
+          next.skills[key] = patched
+          return next
+        }
+      }
+    }
+
+    const fromTokens = splitSkillPhrase(fromTrim)
+    for (const token of fromTokens) {
+      if (!token) continue
+      for (const key of SKILL_FIELD_KEYS) {
+        const parts = next.skills[key]
+          .split(',')
+          .map((s) => normalizeWs(s))
+          .filter(Boolean)
+        const ti = parts.findIndex((p) => p.toLowerCase() === token.toLowerCase())
+        if (ti >= 0) {
+          const insert = expandSuggestedTokens(toTrim)
+          parts.splice(ti, 1, ...insert)
+          next.skills[key] = dedupeTokens(parts).join(', ')
+          return next
+        }
+      }
+    }
+  }
+
+  const target = pickSkillsAppendTarget(toTrim)
+  const tokensToAdd = expandSuggestedTokens(toTrim)
+
+  const existing = next.skills[target]
+    .split(',')
+    .map((s) => normalizeWs(s))
+    .filter(Boolean)
+  const merged = dedupeTokens([...existing, ...tokensToAdd])
+  next.skills[target] = merged.join(', ')
+
+  if (JSON.stringify(next.skills) === skillsBefore) {
+    return resume
+  }
+  return next
+}
+
 /** trim + single spaces between words */
 export function normalizeWs(s: string): string {
   return s.trim().replace(/\s+/g, ' ')
@@ -206,11 +352,22 @@ export function applyAcceptedFeedbackToStructuredResume(
     if (!acceptedIds.has(item.id)) continue
     const from = item.original_line
     const to = item.suggested_line
-    if (from == null || to == null || from === '') continue
+    if (to == null || normalizeWs(to) === '') continue
+
+    const hasFrom = from != null && normalizeWs(from) !== ''
+    if (!hasFrom && !isSkillsFeedbackItem(item)) continue
 
     const beforeItem = JSON.stringify(next)
-    next = applyOneLineItem(next, item)
-    if (beforeItem === JSON.stringify(next)) {
+
+    if (hasFrom) {
+      next = applyOneLineItem(next, item)
+    }
+
+    if (JSON.stringify(next) === beforeItem && isSkillsFeedbackItem(item)) {
+      next = applySkillsSectionFeedback(next, item)
+    }
+
+    if (JSON.stringify(next) === beforeItem) {
       console.warn(
         '[applyAcceptedFeedbackToStructuredResume] original_line not matched in structured resume:',
         item.id,

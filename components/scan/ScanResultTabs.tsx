@@ -3,7 +3,10 @@
 import { useState } from 'react'
 import { ResumeAuditSidebar } from '@/components/scan/ResumeAuditSidebar'
 import { applyAcceptedFeedbackToStructuredResume } from '@/lib/applyAcceptedFeedbackToStructuredResume'
-import { findFirstStructuredResumeFieldPath } from '@/lib/structuredResumeDiff'
+import {
+  findFirstStructuredResumeFieldPath,
+  findStructuredResumeFieldPathForFeedback,
+} from '@/lib/structuredResumeDiff'
 import type {
   FeedbackItem as FeedbackItemType,
   ExportPdfErrorResponse,
@@ -85,10 +88,8 @@ export function ScanResultTabs({
     setMergeNoticeFromUnmatched(unmatchedLineItemIds)
 
     if (
-      isJobMatch &&
       onJdFeedbackSynced &&
       item &&
-      item.original_line &&
       item.suggested_line &&
       !unmatchedLineItemIds.includes(id)
     ) {
@@ -129,14 +130,21 @@ export function ScanResultTabs({
     onStructuredResumeChange(resume)
     setMergeNoticeFromUnmatched(unmatchedLineItemIds)
 
-    if (isJobMatch && onJdFeedbackSynced) {
-      const path = findFirstStructuredResumeFieldPath(before, resume)
+    if (onJdFeedbackSynced && JSON.stringify(before) !== JSON.stringify(resume)) {
+      let flashPath: string | null = null
+      for (const item of feedback) {
+        if (!nextAccepted.has(item.id)) continue
+        if (unmatchedLineItemIds.includes(item.id)) continue
+        flashPath =
+          findStructuredResumeFieldPathForFeedback(before, resume, item) ??
+          findFirstStructuredResumeFieldPath(before, resume)
+        break
+      }
       let first = true
       for (const item of feedback) {
         if (!nextAccepted.has(item.id)) continue
-        if (!item.original_line || !item.suggested_line) continue
         if (unmatchedLineItemIds.includes(item.id)) continue
-        onJdFeedbackSynced(item, first ? path : null)
+        onJdFeedbackSynced(item, first ? flashPath : null)
         first = false
       }
     }

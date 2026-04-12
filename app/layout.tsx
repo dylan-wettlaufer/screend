@@ -2,15 +2,21 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from '@clerk/nextjs';
+import { Manrope, Source_Serif_4, JetBrains_Mono } from "next/font/google"
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const fontSans = Manrope({
   subsets: ["latin"],
-}); 
+  variable: "--font-sans",
+});
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const fontSerif = Source_Serif_4({
   subsets: ["latin"],
+  variable: "--font-serif",
+});
+
+const fontMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
 });
 
 export const metadata: Metadata = {
@@ -50,7 +56,7 @@ export default function RootLayout({
         },
       }}
     >
-      <html lang="en">
+      <html lang="en" className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable} antialiased`}>
         <body>{children}</body>
       </html>
     </ClerkProvider>

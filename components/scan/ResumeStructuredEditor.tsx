@@ -1,13 +1,16 @@
 'use client'
 
-'use client'
-
 import { useEffect, type CSSProperties } from 'react'
-import type { StructuredResume } from '@/lib/types'
+import { cn } from '@/lib/utils'
+import type { StructuredResume, SectionDiagnosticKey } from '@/lib/types'
 
 interface ResumeStructuredEditorProps {
   value: StructuredResume
   onChange: (next: StructuredResume) => void
+  /** Outline this section while a suggestion targets it */
+  highlightedSectionKey?: SectionDiagnosticKey | null
+  /** Outline the experience/project entry card for paths like `experience.0.bullets.1` */
+  highlightedFieldPath?: string | null
   /** First changed field path after JD sync; triggers a one-shot flash on that control */
   flashFieldPath?: string | null
   flashFieldNonce?: number
@@ -69,20 +72,43 @@ const emptyProject: StructuredResume['projects'][number] = {
 export function ResumeStructuredEditor({
   value,
   onChange,
+  highlightedSectionKey = null,
+  highlightedFieldPath = null,
   flashFieldPath,
   flashFieldNonce = 0,
 }: ResumeStructuredEditorProps) {
+  const focusedExpIdx = (() => {
+    const m = highlightedFieldPath?.match(/^experience\.(\d+)\./)
+    return m ? Number(m[1]) : null
+  })()
+  const focusedProjIdx = (() => {
+    const m = highlightedFieldPath?.match(/^projects\.(\d+)\./)
+    return m ? Number(m[1]) : null
+  })()
+
   useEffect(() => {
     if (!flashFieldPath) return
-    const el = document.querySelector(
-      `[data-field-path="${flashFieldPath.replace(/"/g, '\\"')}"]`,
-    ) as HTMLElement | null
-    if (!el) return
-    el.classList.remove('jd-sync-flash')
-    void el.offsetWidth
-    el.classList.add('jd-sync-flash')
-    const t = window.setTimeout(() => el.classList.remove('jd-sync-flash'), 1200)
-    return () => window.clearTimeout(t)
+    let cancelled = false
+    let removeTimer: number | undefined
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (cancelled) return
+        const el = document.querySelector(
+          `[data-field-path="${flashFieldPath.replace(/"/g, '\\"')}"]`,
+        ) as HTMLElement | null
+        if (!el) return
+        el.classList.remove('jd-sync-flash')
+        void el.offsetWidth
+        el.classList.add('jd-sync-flash')
+        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' })
+        removeTimer = window.setTimeout(() => el.classList.remove('jd-sync-flash'), 1200)
+      })
+    })
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(id)
+      if (removeTimer != null) window.clearTimeout(removeTimer)
+    }
   }, [flashFieldPath, flashFieldNonce])
 
   return (
@@ -90,7 +116,10 @@ export function ResumeStructuredEditor({
       {/* Contact */}
       <fieldset
         id="resume-section-header"
-        className="rounded-card border p-4 space-y-3 scroll-mt-4"
+        className={cn(
+          'rounded-card border p-4 space-y-3 scroll-mt-4',
+          highlightedSectionKey === 'header' && 'jd-editor-section-focus',
+        )}
         style={sectionCardStyle}
       >
         <legend className="text-xs font-medium mb-1 px-0.5" style={{ color: 'var(--color-text-secondary)' }}>
@@ -163,7 +192,10 @@ export function ResumeStructuredEditor({
       {/* Education */}
       <fieldset
         id="resume-section-education"
-        className="rounded-card border p-4 space-y-3 scroll-mt-4"
+        className={cn(
+          'rounded-card border p-4 space-y-3 scroll-mt-4',
+          highlightedSectionKey === 'education' && 'jd-editor-section-focus',
+        )}
         style={sectionCardStyle}
       >
         <legend className="text-xs font-medium mb-1 px-0.5" style={{ color: 'var(--color-text-secondary)' }}>
@@ -327,7 +359,10 @@ export function ResumeStructuredEditor({
       {/* Skills */}
       <fieldset
         id="resume-section-skills"
-        className="rounded-card border p-4 space-y-3 scroll-mt-4"
+        className={cn(
+          'rounded-card border p-4 space-y-3 scroll-mt-4',
+          highlightedSectionKey === 'skills' && 'jd-editor-section-focus',
+        )}
         style={sectionCardStyle}
       >
         <legend className="text-xs font-medium mb-1 px-0.5" style={{ color: 'var(--color-text-secondary)' }}>
@@ -361,7 +396,10 @@ export function ResumeStructuredEditor({
       {/* Experience */}
       <fieldset
         id="resume-section-experience"
-        className="rounded-card border p-4 space-y-3 scroll-mt-4"
+        className={cn(
+          'rounded-card border p-4 space-y-3 scroll-mt-4',
+          highlightedSectionKey === 'experience' && 'jd-editor-section-focus',
+        )}
         style={sectionCardStyle}
       >
         <legend className="text-xs font-medium mb-1 px-0.5" style={{ color: 'var(--color-text-secondary)' }}>
@@ -371,7 +409,10 @@ export function ResumeStructuredEditor({
           {value.experience.map((exp, i) => (
             <div
               key={i}
-              className="rounded-element border p-3 space-y-2"
+              className={cn(
+                'rounded-element border p-3 space-y-2 scroll-mt-4',
+                focusedExpIdx === i && 'jd-editor-section-focus',
+              )}
               style={entryCardStyle}
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -542,7 +583,12 @@ export function ResumeStructuredEditor({
       {/* Projects */}
       <fieldset
         id="resume-section-projects"
-        className="rounded-card border p-4 space-y-3 scroll-mt-4"
+        className={cn(
+          'rounded-card border p-4 space-y-3 scroll-mt-4',
+          highlightedSectionKey === 'projects' &&
+            focusedProjIdx == null &&
+            'jd-editor-section-focus',
+        )}
         style={sectionCardStyle}
       >
         <legend className="text-xs font-medium mb-1 px-0.5" style={{ color: 'var(--color-text-secondary)' }}>
@@ -552,7 +598,10 @@ export function ResumeStructuredEditor({
           {value.projects.map((proj, i) => (
             <div
               key={i}
-              className="rounded-element border p-3 space-y-2"
+              className={cn(
+                'rounded-element border p-3 space-y-2 scroll-mt-4',
+                focusedProjIdx === i && 'jd-editor-section-focus',
+              )}
               style={entryCardStyle}
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

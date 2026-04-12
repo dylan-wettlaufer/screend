@@ -1,18 +1,26 @@
-import type { StructuredResume } from '@/lib/types'
+import type { StructuredResume, SectionDiagnosticKey, FeedbackItem } from '@/lib/types'
+import { mapFeedbackSectionToDiagnosticKey } from '@/lib/mapFeedbackSectionToDiagnosticKey'
 
-/**
- * Returns a stable path for the first differing string field (depth-first),
- * e.g. `header.email`, `experience.0.bullets.2`, `skills.languages`.
- */
-export function findFirstStructuredResumeFieldPath(
-  before: StructuredResume,
-  after: StructuredResume,
-): string | null {
+/** Maps `header.name` / `experience.0.bullets.1` / `skills.languages` to editor fieldset keys. */
+export function fieldPathToSectionKey(path: string): SectionDiagnosticKey | null {
+  const root = path.split('.')[0]
+  if (root === 'header') return 'header'
+  if (root === 'education') return 'education'
+  if (root === 'skills') return 'skills'
+  if (root === 'experience') return 'experience'
+  if (root === 'projects') return 'projects'
+  return null
+}
+
+function diffHeader(before: StructuredResume, after: StructuredResume): string | null {
   const headerKeys = ['name', 'phone', 'email', 'linkedin', 'github'] as const
   for (const k of headerKeys) {
     if (before[k] !== after[k]) return `header.${k}`
   }
+  return null
+}
 
+function diffEducation(before: StructuredResume, after: StructuredResume): string | null {
   const maxEdu = Math.max(before.education.length, after.education.length)
   for (let i = 0; i < maxEdu; i++) {
     const b = before.education[i]
@@ -31,12 +39,18 @@ export function findFirstStructuredResumeFieldPath(
       if (b[ek] !== a[ek]) return `education.${i}.${ek}`
     }
   }
+  return null
+}
 
+function diffSkills(before: StructuredResume, after: StructuredResume): string | null {
   const skillKeys = ['languages', 'frameworks', 'developer_tools', 'libraries'] as const
   for (const sk of skillKeys) {
     if (before.skills[sk] !== after.skills[sk]) return `skills.${sk}`
   }
+  return null
+}
 
+function diffExperience(before: StructuredResume, after: StructuredResume): string | null {
   const maxExp = Math.max(before.experience.length, after.experience.length)
   for (let i = 0; i < maxExp; i++) {
     const b = before.experience[i]
@@ -53,7 +67,10 @@ export function findFirstStructuredResumeFieldPath(
       if (bb !== ab) return `experience.${i}.bullets.${bi}`
     }
   }
+  return null
+}
 
+function diffProjects(before: StructuredResume, after: StructuredResume): string | null {
   const maxProj = Math.max(before.projects.length, after.projects.length)
   for (let i = 0; i < maxProj; i++) {
     const b = before.projects[i]
@@ -70,6 +87,46 @@ export function findFirstStructuredResumeFieldPath(
       if (bb !== ab) return `projects.${i}.bullets.${bi}`
     }
   }
-
   return null
+}
+
+/**
+ * First differing field path, restricted to the section this feedback item belongs to
+ * (so the accept flash targets the right editor control, not e.g. skills when you accepted experience).
+ */
+export function findStructuredResumeFieldPathForFeedback(
+  before: StructuredResume,
+  after: StructuredResume,
+  item: FeedbackItem,
+): string | null {
+  const key = mapFeedbackSectionToDiagnosticKey(item.section)
+  switch (key) {
+    case 'header':
+      return diffHeader(before, after)
+    case 'education':
+      return diffEducation(before, after)
+    case 'skills':
+      return diffSkills(before, after)
+    case 'experience':
+      return diffExperience(before, after)
+    case 'projects':
+      return diffProjects(before, after)
+  }
+}
+
+/**
+ * Returns a stable path for the first differing string field (depth-first),
+ * e.g. `header.email`, `experience.0.bullets.2`, `skills.languages`.
+ */
+export function findFirstStructuredResumeFieldPath(
+  before: StructuredResume,
+  after: StructuredResume,
+): string | null {
+  return (
+    diffHeader(before, after) ??
+    diffEducation(before, after) ??
+    diffSkills(before, after) ??
+    diffExperience(before, after) ??
+    diffProjects(before, after)
+  )
 }
