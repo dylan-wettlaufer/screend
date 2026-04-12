@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { FeedbackItem } from '@/components/scan/FeedbackItem'
+import { ResumeAuditSidebar } from '@/components/scan/ResumeAuditSidebar'
 import { applyAcceptedFeedbackToStructuredResume } from '@/lib/applyAcceptedFeedbackToStructuredResume'
 import type { FeedbackItem as FeedbackItemType, ExportPdfErrorResponse, StructuredResume } from '@/lib/types'
 
@@ -264,18 +264,15 @@ export function ScanResultTabs({
                     {mergeNotice}
                   </p>
                 )}
-                {feedback.map((item) => (
-                  <FeedbackItem
-                    key={item.id}
-                    item={item}
-                    isAccepted={accepted.has(item.id)}
-                    isDismissed={dismissed.has(item.id)}
-                    isActive={activeFeedbackId === item.id}
-                    onAccept={() => handleAccept(item.id)}
-                    onDismiss={() => handleDismiss(item.id)}
-                    onSelect={() => onFeedbackSelect(item.id)}
-                  />
-                ))}
+                <ResumeAuditSidebar
+                  feedback={feedback}
+                  accepted={accepted}
+                  dismissed={dismissed}
+                  activeFeedbackId={activeFeedbackId}
+                  onAccept={handleAccept}
+                  onDismiss={handleDismiss}
+                  onFeedbackSelect={onFeedbackSelect}
+                />
               </>
             )}
           </div>
