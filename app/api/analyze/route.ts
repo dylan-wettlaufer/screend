@@ -194,6 +194,7 @@ export async function POST(
     jd_title: aiResult.jd_title,
     jd_company: aiResult.jd_company,
     structured_resume_json: structuredResumeJson,
+    section_diagnostics_json: aiResult.sections ?? null,
   })
 
   if (insertError) {

@@ -1,7 +1,9 @@
 import { GoogleGenAI } from '@google/genai'
 import {
+  RawJobMatchScanResultSchema,
   ScanResultSchema,
   StructuredResumeSchema,
+  normalizeJobMatchScanResult,
   type ScanResult,
   type StructuredResume,
 } from '@/lib/types'
@@ -73,56 +75,64 @@ ${FEEDBACK_JSON_ITEM_SHAPE}
   "jd_company": null
 }`
 
-const JOB_MATCH_SYSTEM_PROMPT = `You are an expert resume coach, ATS specialist, and technical recruiter with deep knowledge of the tech hiring market. Today's date is ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}. Use this date when evaluating experience dates — do not flag dates as future dates unless they are genuinely after today's date.
+const JOB_MATCH_SYSTEM_PROMPT = `You are a Lead Technical Recruiter and Senior Software Engineer. You are a "Tough Grader" performing a high-stakes diagnostic audit of a resume against a specific Job Description. 
 
-Analyze the resume against the job description below and return ONLY a valid JSON object — no markdown, no prose, no code fences — that exactly matches the schema provided.
+Today's date is ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}. 
 
-All five scoring criteria must be evaluated relative to the specific role described in the job description:
-- ATS: standard section headings, absence of tables/graphics/multi-column layouts that break ATS parsers, keyword density, clean formatting. Also check that ATS-critical keywords from the JD appear in the resume.
-- Content: quantified achievements, strong action verbs, no responsibilities-only bullets, project impact stated clearly. Emphasize whether achievements are relevant to the target role.
-- Writing: grammar, spelling, active voice, conciseness, no clichés or filler phrases
-- Job Match: score based on keyword overlap, required skills coverage, experience level fit, and role/title alignment with the JD. This is the most heavily weighted criterion in job match mode.
-- Ready: section completeness (experience, education, skills, contact), formatting consistency, appropriate length.
+### GRADING PHILOSOPHY:
+- Start at 100 and deduct points for every gap. 
+- AUTOMATIC CEILING: If missing >2 core technologies from the JD, 'Job Match' is capped at 12/20.
+- IMPACT PENALTY: If >50% of 'Experience' bullets lack quantifiable metrics (%, $, #), 'Content' is capped at 10/20.
+- TECHNICAL PEDANTRY: Flag bullets that mention tools without explaining architectural context (e.g., explain "how" it was built, not just "what" was used).
 
-- "Comprehensive Audit: You MUST evaluate each primary section (Header, Experience, Projects, Skills, Education). Ensure at least one piece of feedback addresses the 'Skills' section formatting or keyword strategy, and at least one addresses 'Project' technical depth."
-- "The 'Project' Standard: For technical roles, if a project lacks a stack description or architectural context, flag it as 'Medium' severity—recruiters need to know how it was built, not just what it does."
+### TASK:
+Analyze the resume and return ONLY a valid JSON object matching the schema below. No prose, no markdown, no code fences.
 
-- overall_score calibration: 
-  * Start at 100 and deduct for every gap. 
-  * AUTOMATIC CEILING: If a candidate is missing more than 2 core technologies from the JD, the 'Job Match' score cannot exceed 12/20.
-  * IMPACT PENALTY: If more than 50% of the bullets in 'Experience' lack a quantifiable metric (%, $, #), the 'Content' score must be capped at 10/20.
-  * This should naturally pull the overall_score down to the 50-65 range for "average" resumes.
+### SECTION AUDIT REQUIREMENTS:
+For each section (Header, Experience, Projects, Skills, Education), you must identify:
+1. **Strengths:** 1-2 specific things done correctly (e.g., "Relevant tech stack", "Clean formatting").
+2. **Improvements:** Actionable items. 
+   - If it is a general strategic tip (e.g., "Missing AWS"), set "original_line" and "suggested_line" to null.
+   - If it is a rewrite, provide both lines for a Diff view. 
 
-${SHARED_FEEDBACK_POLICIES}
-
-Extract and return:
-- keywords_matched: keywords present in both the resume and the JD (tech skills, tools, frameworks, methodologies)
-- keywords_missing: keywords required or strongly preferred in the JD that are absent from the resume
-- jd_title: the job title extracted from the JD (null if unclear)
-- jd_company: the company name extracted from the JD (null if unclear)
-
-Provide 5–10 feedback items, prioritizing gaps that directly reduce job match score. Each feedback item must include an original_line (the exact text from the resume) and a suggested_line where a line-level change is being recommended — set both to null only for high-level structural observations.
-
-Return a JSON object with this exact shape:
+### JSON SCHEMA:
 {
   "overall_score": <integer 0-100>,
   "scores": {
-    "ats": <integer 0-20>,
-    "content": <integer 0-20>,
-    "writing": <integer 0-20>,
-    "job_match": <integer 0-20>,
-    "ready": <integer 0-20>
+    "ats": <0-20>,
+    "content": <0-20>,
+    "writing": <0-20>,
+    "job_match": <0-20>,
+    "ready": <0-20>
   },
-${FEEDBACK_JSON_ITEM_SHAPE}
-  "keywords_matched": ["<string>"],
-  "keywords_missing": ["<string>"],
-  "jd_title": "<string or null>",
-  "jd_company": "<string or null>"
+  "sections": {
+    "header": { "status": "optimized" | "needs_improvement", "strengths": [], "improvements": [] },
+    "experience": { "status": "optimized" | "needs_improvement", "strengths": [], "improvements": [] },
+    "projects": { "status": "optimized" | "needs_improvement", "strengths": [], "improvements": [] },
+    "skills": { "status": "optimized" | "needs_improvement", "strengths": [], "improvements": [] },
+    "education": { "status": "optimized" | "needs_improvement", "strengths": [], "improvements": [] }
+  },
+  "keywords_matched": ["string"],
+  "keywords_missing": ["string"],
+  "jd_title": "string or null",
+  "jd_company": "string or null"
+}
+
+### FEEDBACK ITEM SHAPE (Inside 'improvements' arrays):
+{
+  "id": "<unique string>",
+  "severity": "high" | "medium" | "low",
+  "title": "<short title>",
+  "description": "<concrete guidance>",
+  "reasoning": "<recruiter perspective: why this matters for tech hiring>",
+  "original_line": "<exact line from resume or null>",
+  "suggested_line": "<polished replacement line or null>"
 }`
 
 async function callGemini(
   userMessage: string,
-  systemPrompt: string
+  systemPrompt: string,
+  mode: 'general' | 'job_match'
 ): Promise<ScanResult> {
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
@@ -138,6 +148,10 @@ async function callGemini(
   if (!raw) throw new Error('Empty response from Gemini')
 
   const parsed: unknown = JSON.parse(raw)
+  if (mode === 'job_match') {
+    const jobRaw = RawJobMatchScanResultSchema.parse(parsed)
+    return normalizeJobMatchScanResult(jobRaw)
+  }
   return ScanResultSchema.parse(parsed)
 }
 
@@ -149,9 +163,9 @@ export async function analyzeResume(
   const userMessage = `ROLE TRACK: ${track}\n\n--- RESUME ---\n${resumeText}`
 
   try {
-    return await callGemini(userMessage, GENERAL_SCAN_SYSTEM_PROMPT)
+    return await callGemini(userMessage, GENERAL_SCAN_SYSTEM_PROMPT, 'general')
   } catch {
-    return await callGemini(userMessage, GENERAL_SCAN_SYSTEM_PROMPT)
+    return await callGemini(userMessage, GENERAL_SCAN_SYSTEM_PROMPT, 'general')
   }
 }
 
@@ -164,9 +178,9 @@ export async function analyzeResumeWithJD(
   const userMessage = `ROLE TRACK: ${track}\n\n--- RESUME ---\n${resumeText}\n\n--- JOB DESCRIPTION ---\n${jdText}`
 
   try {
-    return await callGemini(userMessage, JOB_MATCH_SYSTEM_PROMPT)
+    return await callGemini(userMessage, JOB_MATCH_SYSTEM_PROMPT, 'job_match')
   } catch {
-    return await callGemini(userMessage, JOB_MATCH_SYSTEM_PROMPT)
+    return await callGemini(userMessage, JOB_MATCH_SYSTEM_PROMPT, 'job_match')
   }
 }
 

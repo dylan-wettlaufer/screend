@@ -6,7 +6,7 @@ import { ScoreRing } from '@/components/scan/ScoreRing'
 import { SubScoreBar } from '@/components/scan/SubScoreBar'
 import { ScanResultTabs } from '@/components/scan/ScanResultTabs'
 import { ResumeAnnotationPanel, type WorkbenchTab } from '@/components/scan/ResumeAnnotationPanel'
-import type { ScanRecord, FeedbackItem, StructuredResume } from '@/lib/types'
+import type { ScanRecord, FeedbackItem, SectionDiagnostics, StructuredResume } from '@/lib/types'
 
 type ViewMode = 'split' | 'analysis' | 'document'
 
@@ -29,6 +29,7 @@ interface ScanResultLayoutProps {
   /** From DB structured_resume_json */
   initialStructuredResume: StructuredResume | null
   feedback: FeedbackItem[]
+  sectionDiagnostics: SectionDiagnostics | null
   keywordsMatched: string[]
   keywordsMissing: string[]
   isJobMatch: boolean
@@ -41,6 +42,7 @@ export function ScanResultLayout({
   scan,
   initialStructuredResume,
   feedback,
+  sectionDiagnostics,
   keywordsMatched,
   keywordsMissing,
   isJobMatch,
@@ -246,6 +248,7 @@ export function ScanResultLayout({
             >
               <ScanResultTabs
                 feedback={feedback}
+                sectionDiagnostics={sectionDiagnostics}
                 keywordsMatched={keywordsMatched}
                 keywordsMissing={keywordsMissing}
                 isJobMatch={isJobMatch}

@@ -2,7 +2,13 @@ import { currentUser } from '@clerk/nextjs/server'
 import { redirect, notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ScanResultLayout } from '@/components/scan/ScanResultLayout'
-import { StructuredResumeSchema, type ScanRecord, type StructuredResume } from '@/lib/types'
+import {
+  SectionDiagnosticsSchema,
+  StructuredResumeSchema,
+  type ScanRecord,
+  type SectionDiagnostics,
+  type StructuredResume,
+} from '@/lib/types'
 
 interface ScanResultPageProps {
   params: Promise<{ id: string }>
@@ -55,6 +61,14 @@ export default async function ScanResultPage({ params }: ScanResultPageProps) {
   }
 
   const feedback = Array.isArray(typedScan.feedback_json) ? typedScan.feedback_json : []
+  const rawSectionDiag = typedScan.section_diagnostics_json
+  let sectionDiagnostics: SectionDiagnostics | null = null
+  if (rawSectionDiag != null && typeof rawSectionDiag === 'object') {
+    const parsed = SectionDiagnosticsSchema.safeParse(rawSectionDiag)
+    if (parsed.success) {
+      sectionDiagnostics = parsed.data
+    }
+  }
   const keywordsMatched = Array.isArray(typedScan.keywords_matched) ? typedScan.keywords_matched : []
   const keywordsMissing = Array.isArray(typedScan.keywords_missing) ? typedScan.keywords_missing : []
   const isJobMatch = typedScan.mode === 'job_match'
@@ -82,6 +96,7 @@ export default async function ScanResultPage({ params }: ScanResultPageProps) {
         scan={typedScan}
         initialStructuredResume={initialStructuredResume}
         feedback={feedback}
+        sectionDiagnostics={sectionDiagnostics}
         keywordsMatched={keywordsMatched}
         keywordsMissing={keywordsMissing}
         isJobMatch={isJobMatch}

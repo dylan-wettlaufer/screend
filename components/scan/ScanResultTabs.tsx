@@ -3,10 +3,16 @@
 import { useState } from 'react'
 import { ResumeAuditSidebar } from '@/components/scan/ResumeAuditSidebar'
 import { applyAcceptedFeedbackToStructuredResume } from '@/lib/applyAcceptedFeedbackToStructuredResume'
-import type { FeedbackItem as FeedbackItemType, ExportPdfErrorResponse, StructuredResume } from '@/lib/types'
+import type {
+  FeedbackItem as FeedbackItemType,
+  ExportPdfErrorResponse,
+  SectionDiagnostics,
+  StructuredResume,
+} from '@/lib/types'
 
 interface ScanResultTabsProps {
   feedback: FeedbackItemType[]
+  sectionDiagnostics: SectionDiagnostics | null
   keywordsMatched: string[]
   keywordsMissing: string[]
   isJobMatch: boolean
@@ -19,6 +25,7 @@ interface ScanResultTabsProps {
 
 export function ScanResultTabs({
   feedback,
+  sectionDiagnostics,
   keywordsMatched,
   keywordsMissing,
   isJobMatch,
@@ -266,6 +273,7 @@ export function ScanResultTabs({
                 )}
                 <ResumeAuditSidebar
                   feedback={feedback}
+                  sectionDiagnostics={sectionDiagnostics}
                   accepted={accepted}
                   dismissed={dismissed}
                   activeFeedbackId={activeFeedbackId}
