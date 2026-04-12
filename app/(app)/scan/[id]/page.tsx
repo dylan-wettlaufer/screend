@@ -91,7 +91,7 @@ export default async function ScanResultPage({ params }: ScanResultPageProps) {
   }
 
   return (
-    <main className="h-screen px-6 pt-6 pb-6" style={{ background: 'var(--color-bg-base)' }}>
+    <main className="h-screen px-4 pt-4 pb-4 sm:px-5" style={{ background: 'var(--color-bg-base)' }}>
       <ScanResultLayout
         scan={typedScan}
         initialStructuredResume={initialStructuredResume}

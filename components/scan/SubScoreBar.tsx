@@ -7,6 +7,8 @@ interface SubScoreBarProps {
   score: number
   max?: number
   compact?: boolean
+  /** Tighter row for condensed score strip */
+  dense?: boolean
 }
 
 function getColor(score: number, max: number): string {
@@ -16,7 +18,13 @@ function getColor(score: number, max: number): string {
   return 'var(--color-danger)'
 }
 
-export function SubScoreBar({ label, score, max = 20, compact = false }: SubScoreBarProps) {
+export function SubScoreBar({
+  label,
+  score,
+  max = 20,
+  compact = false,
+  dense = false,
+}: SubScoreBarProps) {
   const [animated, setAnimated] = useState(false)
 
   useEffect(() => {
@@ -28,25 +36,28 @@ export function SubScoreBar({ label, score, max = 20, compact = false }: SubScor
   const pct = animated ? (clampedScore / max) * 100 : 0
   const color = getColor(clampedScore, max)
 
+  const gapClass = dense ? 'gap-0.5' : compact ? 'gap-1' : 'gap-1.5'
+  const labelClass = dense
+    ? 'text-[10px] leading-tight line-clamp-2'
+    : compact
+      ? 'text-[11px] leading-tight'
+      : 'text-xs'
+  const valueClass = dense ? 'text-[10px]' : compact ? 'text-[11px]' : 'text-xs'
+  const barH = dense ? 'h-0.5' : compact ? 'h-1' : 'h-1.5'
+
   return (
-    <div className={`flex flex-col ${compact ? 'gap-1' : 'gap-1.5'}`}>
-      <div className="flex items-center justify-between gap-2">
-        <span
-          className={compact ? 'text-[11px] leading-tight' : 'text-xs'}
-          style={{ color: 'var(--color-text-secondary)' }}
-        >
+    <div className={`flex flex-col ${gapClass}`}>
+      <div className="flex items-start justify-between gap-1.5 min-w-0">
+        <span className={labelClass} style={{ color: 'var(--color-text-secondary)' }}>
           {label}
         </span>
-        <span
-          className={`font-mono ${compact ? 'text-[11px]' : 'text-xs'}`}
-          style={{ color: 'var(--color-text-primary)' }}
-        >
+        <span className={`font-mono shrink-0 ${valueClass}`} style={{ color: 'var(--color-text-primary)' }}>
           {clampedScore}
           <span style={{ color: 'var(--color-text-tertiary)' }}>/{max}</span>
         </span>
       </div>
       <div
-        className={`${compact ? 'h-1' : 'h-1.5'} w-full rounded-pill overflow-hidden border`}
+        className={`${barH} w-full rounded-pill overflow-hidden border`}
         style={{
           background: 'var(--color-bg-base)',
           borderColor: 'var(--color-border)',

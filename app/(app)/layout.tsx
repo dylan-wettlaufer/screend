@@ -11,9 +11,7 @@ export default async function ProtectedAppLayout({
   return (
     <div className="min-h-screen bg-bg-base flex">
       <AppSidebar />
-      <div className="flex-1 min-w-0">
-        {children}
-      </div>
+      <div className="flex-1 min-w-0">{children}</div>
     </div>
   )
 }
