@@ -141,10 +141,10 @@ export function ScanResultTabs({
       <div className="flex flex-col min-h-0 flex-1">
         {/* Tab bar — stays visible; only content below scrolls */}
         <div
-          className="shrink-0 flex items-center gap-1 border-b px-4 pt-4"
+          className="shrink-0 flex items-center gap-1 border-b px-4 pt-3 pb-0"
           style={{
-            borderColor: 'var(--color-border)',
-            background: 'var(--color-bg-surface)',
+            borderColor: 'var(--color-border-strong)',
+            background: 'var(--color-bg-raised)',
           }}
         >
           {tabs.map((t) => (
@@ -241,7 +241,10 @@ export function ScanResultTabs({
           </div>
       </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 pt-3">
+        <div
+          className="flex-1 min-h-0 overflow-y-auto px-4 pb-5 pt-4"
+          style={{ background: 'var(--color-bg-base)' }}
+        >
         {downloadPdfError && (
           <p className="font-mono text-xs mb-3" style={{ color: 'var(--color-danger)' }}>
             {downloadPdfError}

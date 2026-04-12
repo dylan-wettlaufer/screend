@@ -169,8 +169,8 @@ export function ScanResultLayout({
         className={[
           'min-h-0 flex-1',
           isSplit
-            ? 'grid gap-4 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.28fr)] lg:[grid-template-rows:minmax(0,1fr)]'
-            : 'flex gap-4',
+            ? 'grid gap-5 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.28fr)] lg:[grid-template-rows:minmax(0,1fr)]'
+            : 'flex gap-5',
         ].join(' ')}
       >
         {/* Left panel — resume */}
@@ -184,7 +184,7 @@ export function ScanResultLayout({
             ].join(' ')}
             style={{
               background: 'var(--color-bg-surface)',
-              borderColor: 'var(--color-border)',
+              borderColor: 'var(--color-border-strong)',
             }}
           >
             <ResumeAnnotationPanel
@@ -216,21 +216,21 @@ export function ScanResultLayout({
               <div
                 className="rounded-card border p-2.5 flex items-center justify-center"
                 style={{
-                  background: 'var(--color-bg-surface)',
-                  borderColor: 'var(--color-border)',
+                  background: 'var(--color-bg-raised)',
+                  borderColor: 'var(--color-border-strong)',
                 }}
               >
                 <ScoreRing score={scan.overall_score} compact />
               </div>
               <div
-                className="rounded-card border px-3 py-2.5 flex flex-col gap-2 justify-center"
+                className="rounded-card border px-3 py-3 flex flex-col gap-2.5 justify-center"
                 style={{
-                  background: 'var(--color-bg-surface)',
-                  borderColor: 'var(--color-border)',
+                  background: 'var(--color-bg-raised)',
+                  borderColor: 'var(--color-border-strong)',
                 }}
               >
                 <p
-                  className="text-xs font-medium"
+                  className="text-xs font-medium tracking-wide"
                   style={{ color: 'var(--color-text-primary)' }}
                 >
                   Score breakdown
@@ -243,8 +243,11 @@ export function ScanResultLayout({
 
             {/* Tabs panel — tab bar fixed, list scrolls */}
             <div
-              className="min-h-0 flex-1 flex flex-col rounded-card border bg-bg-surface overflow-hidden"
-              style={{ borderColor: 'var(--color-border)' }}
+              className="min-h-0 flex-1 flex flex-col rounded-card border overflow-hidden"
+              style={{
+                borderColor: 'var(--color-border-strong)',
+                background: 'var(--color-bg-surface)',
+              }}
             >
               <ScanResultTabs
                 feedback={feedback}

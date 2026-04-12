@@ -26,7 +26,7 @@ export function AppSidebar() {
   }
 
   return (
-    <aside className="w-64 border-r border-border bg-bg-surface px-4 py-5 flex flex-col min-h-screen">
+    <aside className="w-64 border-r border-border-strong bg-bg-surface px-4 py-5 flex flex-col min-h-screen">
       <div className="mb-8 px-2">
         <p className="text-text-primary text-sm font-medium">Screend</p>
         <p className="text-text-tertiary text-xs font-mono mt-1">Resume workspace</p>

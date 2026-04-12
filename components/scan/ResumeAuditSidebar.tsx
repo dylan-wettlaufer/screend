@@ -680,7 +680,7 @@ function ResumeAuditSidebarWithDiagnostics({
       multiple={accordionMultiple}
       defaultValue={defaultOpen}
       className="rounded-card border overflow-hidden"
-      style={{ borderColor: 'var(--color-border)', background: 'var(--color-bg-raised)' }}
+      style={{ borderColor: 'var(--color-border-strong)', background: 'var(--color-bg-raised)' }}
     >
       {SECTION_DIAGNOSTIC_KEYS.map((key) => {
         const audit = sectionDiagnostics[key]
@@ -730,8 +730,8 @@ function ResumeAuditSidebarWithDiagnostics({
               <div
                 className="rounded-element border px-3 py-3 mb-3 flex flex-col gap-3"
                 style={{
-                  borderColor: 'var(--color-border)',
-                  background: 'var(--color-bg-surface)',
+                  borderColor: 'var(--color-border-strong)',
+                  background: 'var(--color-bg-base)',
                 }}
               >
                 <p className="font-mono text-[10px] tracking-wide" style={{ color: 'var(--color-text-tertiary)' }}>
@@ -829,7 +829,7 @@ function ResumeAuditSidebarLegacy({
       multiple={accordionMultiple}
       defaultValue={defaultOpen}
       className="rounded-card border overflow-hidden"
-      style={{ borderColor: 'var(--color-border)', background: 'var(--color-bg-raised)' }}
+      style={{ borderColor: 'var(--color-border-strong)', background: 'var(--color-bg-raised)' }}
     >
       {LEGACY_SECTIONS.map(({ key, label }) => {
         const items = grouped[key]
@@ -921,7 +921,7 @@ function ResumeAuditSidebarLegacy({
                   No items in this section.
                 </p>
               ) : (
-                <div className="flex flex-col gap-3 pl-1">
+                <div className="flex flex-col gap-4 pl-1">
                   {items.map((item) => (
                     <LegacyAuditFeedbackCard
                       key={item.id}

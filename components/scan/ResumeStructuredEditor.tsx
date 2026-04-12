@@ -9,19 +9,29 @@ interface ResumeStructuredEditorProps {
 }
 
 function fieldClass() {
-  return 'w-full rounded-element border px-2.5 py-1.5 text-sm'
+  return 'w-full rounded-element border px-2.5 py-2 text-sm'
 }
 
 function labelClass() {
-  return 'block text-xs mb-0.5'
+  return 'block text-xs mb-1'
 }
 
 function inputStyle(): CSSProperties {
   return {
-    borderColor: 'var(--color-border)',
+    borderColor: 'var(--color-border-strong)',
     color: 'var(--color-text-primary)',
-    background: 'var(--color-bg-raised)',
+    background: 'var(--color-bg-base)',
   }
+}
+
+const sectionCardStyle: CSSProperties = {
+  borderColor: 'var(--color-border-strong)',
+  background: 'var(--color-bg-raised)',
+}
+
+const entryCardStyle: CSSProperties = {
+  borderColor: 'var(--color-border-strong)',
+  background: 'var(--color-bg-surface)',
 }
 
 const emptyEducation: StructuredResume['education'][number] = {
@@ -53,10 +63,10 @@ const emptyProject: StructuredResume['projects'][number] = {
 
 export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEditorProps) {
   return (
-    <div className="flex flex-col gap-5 pb-4">
+    <div className="flex flex-col gap-4 pb-4">
       {/* Contact */}
-      <fieldset className="space-y-2">
-        <legend className="text-xs font-medium mb-2" style={{ color: 'var(--color-text-tertiary)' }}>
+      <fieldset className="rounded-card border p-4 space-y-3" style={sectionCardStyle}>
+        <legend className="text-xs font-medium mb-1 px-0.5" style={{ color: 'var(--color-text-secondary)' }}>
           Contact
         </legend>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -119,8 +129,8 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
       </fieldset>
 
       {/* Education */}
-      <fieldset>
-        <legend className="text-xs font-medium mb-2" style={{ color: 'var(--color-text-tertiary)' }}>
+      <fieldset className="rounded-card border p-4 space-y-3" style={sectionCardStyle}>
+        <legend className="text-xs font-medium mb-1 px-0.5" style={{ color: 'var(--color-text-secondary)' }}>
           Education
         </legend>
         <div className="flex flex-col gap-4">
@@ -128,7 +138,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
             <div
               key={i}
               className="rounded-element border p-3 space-y-2"
-              style={{ borderColor: 'var(--color-border)', background: 'var(--color-bg-raised)' }}
+              style={entryCardStyle}
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
@@ -239,8 +249,12 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
               </div>
               <button
                 type="button"
-                className="text-xs font-mono"
-                style={{ color: 'var(--color-danger)' }}
+                className="rounded-element border px-2 py-1 text-xs font-mono w-fit transition-colors"
+                style={{
+                  borderColor: 'var(--color-border-strong)',
+                  color: 'var(--color-danger)',
+                  background: 'transparent',
+                }}
                 onClick={() =>
                   onChange({
                     ...value,
@@ -254,8 +268,12 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
           ))}
           <button
             type="button"
-            className="rounded-element border px-2 py-1 text-xs w-fit"
-            style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
+            className="rounded-element border px-2.5 py-1.5 text-xs w-fit transition-colors"
+            style={{
+              borderColor: 'var(--color-border-strong)',
+              color: 'var(--color-text-primary)',
+              background: 'var(--color-bg-surface)',
+            }}
             onClick={() => onChange({ ...value, education: [...value.education, { ...emptyEducation }] })}
           >
             Add education
@@ -264,8 +282,8 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
       </fieldset>
 
       {/* Skills */}
-      <fieldset className="space-y-2">
-        <legend className="text-xs font-medium mb-2" style={{ color: 'var(--color-text-tertiary)' }}>
+      <fieldset className="rounded-card border p-4 space-y-3" style={sectionCardStyle}>
+        <legend className="text-xs font-medium mb-1 px-0.5" style={{ color: 'var(--color-text-secondary)' }}>
           Technical skills
         </legend>
         {(
@@ -293,8 +311,8 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
       </fieldset>
 
       {/* Experience */}
-      <fieldset>
-        <legend className="text-xs font-medium mb-2" style={{ color: 'var(--color-text-tertiary)' }}>
+      <fieldset className="rounded-card border p-4 space-y-3" style={sectionCardStyle}>
+        <legend className="text-xs font-medium mb-1 px-0.5" style={{ color: 'var(--color-text-secondary)' }}>
           Experience
         </legend>
         <div className="flex flex-col gap-4">
@@ -302,7 +320,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
             <div
               key={i}
               className="rounded-element border p-3 space-y-2"
-              style={{ borderColor: 'var(--color-border)', background: 'var(--color-bg-raised)' }}
+              style={entryCardStyle}
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
@@ -429,8 +447,12 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
               </div>
               <button
                 type="button"
-                className="text-xs font-mono"
-                style={{ color: 'var(--color-danger)' }}
+                className="rounded-element border px-2 py-1 text-xs font-mono w-fit transition-colors"
+                style={{
+                  borderColor: 'var(--color-border-strong)',
+                  color: 'var(--color-danger)',
+                  background: 'transparent',
+                }}
                 onClick={() =>
                   onChange({
                     ...value,
@@ -444,8 +466,12 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
           ))}
           <button
             type="button"
-            className="rounded-element border px-2 py-1 text-xs w-fit"
-            style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
+            className="rounded-element border px-2.5 py-1.5 text-xs w-fit transition-colors"
+            style={{
+              borderColor: 'var(--color-border-strong)',
+              color: 'var(--color-text-primary)',
+              background: 'var(--color-bg-surface)',
+            }}
             onClick={() =>
               onChange({ ...value, experience: [...value.experience, { ...emptyExperience }] })
             }
@@ -456,8 +482,8 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
       </fieldset>
 
       {/* Projects */}
-      <fieldset>
-        <legend className="text-xs font-medium mb-2" style={{ color: 'var(--color-text-tertiary)' }}>
+      <fieldset className="rounded-card border p-4 space-y-3" style={sectionCardStyle}>
+        <legend className="text-xs font-medium mb-1 px-0.5" style={{ color: 'var(--color-text-secondary)' }}>
           Projects
         </legend>
         <div className="flex flex-col gap-4">
@@ -465,7 +491,7 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
             <div
               key={i}
               className="rounded-element border p-3 space-y-2"
-              style={{ borderColor: 'var(--color-border)', background: 'var(--color-bg-raised)' }}
+              style={entryCardStyle}
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div className="sm:col-span-2">
@@ -577,8 +603,12 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
               </div>
               <button
                 type="button"
-                className="text-xs font-mono"
-                style={{ color: 'var(--color-danger)' }}
+                className="rounded-element border px-2 py-1 text-xs font-mono w-fit transition-colors"
+                style={{
+                  borderColor: 'var(--color-border-strong)',
+                  color: 'var(--color-danger)',
+                  background: 'transparent',
+                }}
                 onClick={() =>
                   onChange({
                     ...value,
@@ -592,8 +622,12 @@ export function ResumeStructuredEditor({ value, onChange }: ResumeStructuredEdit
           ))}
           <button
             type="button"
-            className="rounded-element border px-2 py-1 text-xs w-fit"
-            style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
+            className="rounded-element border px-2.5 py-1.5 text-xs w-fit transition-colors"
+            style={{
+              borderColor: 'var(--color-border-strong)',
+              color: 'var(--color-text-primary)',
+              background: 'var(--color-bg-surface)',
+            }}
             onClick={() =>
               onChange({ ...value, projects: [...value.projects, { ...emptyProject }] })
             }

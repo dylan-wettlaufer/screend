@@ -11,9 +11,9 @@ interface SubScoreBarProps {
 
 function getColor(score: number, max: number): string {
   const pct = (score / max) * 100
-  if (pct >= 75) return '#639922'
-  if (pct >= 50) return '#EF9F27'
-  return '#E24B4A'
+  if (pct >= 75) return 'var(--color-metric-positive)'
+  if (pct >= 50) return 'var(--color-warning)'
+  return 'var(--color-danger)'
 }
 
 export function SubScoreBar({ label, score, max = 20, compact = false }: SubScoreBarProps) {
@@ -29,7 +29,7 @@ export function SubScoreBar({ label, score, max = 20, compact = false }: SubScor
   const color = getColor(clampedScore, max)
 
   return (
-    <div className={`flex flex-col ${compact ? 'gap-0.5' : 'gap-1.5'}`}>
+    <div className={`flex flex-col ${compact ? 'gap-1' : 'gap-1.5'}`}>
       <div className="flex items-center justify-between gap-2">
         <span
           className={compact ? 'text-[11px] leading-tight' : 'text-xs'}
@@ -46,8 +46,11 @@ export function SubScoreBar({ label, score, max = 20, compact = false }: SubScor
         </span>
       </div>
       <div
-        className={`${compact ? 'h-1' : 'h-1.5'} w-full rounded-pill overflow-hidden`}
-        style={{ background: 'var(--color-bg-raised)' }}
+        className={`${compact ? 'h-1' : 'h-1.5'} w-full rounded-pill overflow-hidden border`}
+        style={{
+          background: 'var(--color-bg-base)',
+          borderColor: 'var(--color-border)',
+        }}
       >
         <div
           className="h-full rounded-pill"

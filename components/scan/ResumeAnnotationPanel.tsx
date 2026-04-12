@@ -124,7 +124,7 @@ export function ResumeAnnotationPanel({
     <>
       <div
         className="flex items-center justify-between px-4 pt-4 pb-3 shrink-0 gap-2 flex-wrap"
-        style={{ borderBottom: '0.5px solid var(--color-border)' }}
+        style={{ borderBottom: '0.5px solid var(--color-border-strong)' }}
       >
         <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
           {showWorkbenchChrome ? 'Resume workbench' : 'Submitted resume'}
@@ -133,7 +133,7 @@ export function ResumeAnnotationPanel({
           {showWorkbench && (
             <div
               className="flex items-center gap-0.5 rounded-element border p-0.5 flex-wrap"
-              style={{ borderColor: 'var(--color-border)', background: 'var(--color-bg-raised)' }}
+              style={{ borderColor: 'var(--color-border-strong)', background: 'var(--color-bg-raised)' }}
             >
               <WorkbenchTabButton
                 active={workbenchTab === 'submitted'}
@@ -201,7 +201,10 @@ export function ResumeAnnotationPanel({
             </div>
           )
         ) : showWorkbench ? (
-          <div className="h-full min-h-0 overflow-y-auto px-4 py-3">
+          <div
+            className="h-full min-h-0 overflow-y-auto px-4 py-4"
+            style={{ background: 'var(--color-bg-base)' }}
+          >
             {workbenchTab === 'editor' ? (
               <ResumeStructuredEditor
                 value={structuredResume!}
